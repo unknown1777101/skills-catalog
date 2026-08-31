@@ -1,5 +1,6 @@
 /**
  * Client SPA Controller for Antigravity Skills Catalog
+ * With Smart Update, Revision Diff, and Markdown Rendering
  */
 
 let skillsData = [];
@@ -9,6 +10,7 @@ let selectedSkills = new Set();
 let currentFilterCategory = 'all';
 let currentSearchQuery = '';
 let currentPreviewSkill = null;
+let currentModalTab = 'skill';
 
 // DOM Elements
 const btnTargetGlobal = document.getElementById('btnTargetGlobal');
@@ -21,8 +23,17 @@ const batchBar = document.getElementById('batchBar');
 const selectAllCheckbox = document.getElementById('selectAllCheckbox');
 const selectedCountText = document.getElementById('selectedCountText');
 const batchInstallCount = document.getElementById('batchInstallCount');
+const batchUpdateCount = document.getElementById('batchUpdateCount');
 const btnBatchInstall = document.getElementById('btnBatchInstall');
+const btnBatchUpdate = document.getElementById('btnBatchUpdate');
 const btnBatchUninstall = document.getElementById('btnBatchUninstall');
+
+// Stats Elements
+const statTotalSkills = document.getElementById('statTotalSkills');
+const statInstalledSkills = document.getElementById('statInstalledSkills');
+const statUpdatesAvailable = document.getElementById('statUpdatesAvailable');
+const btnQuickUpdateAll = document.getElementById('btnQuickUpdateAll');
+const quickUpdateCount = document.getElementById('quickUpdateCount');
 
 // Modal Elements
 const previewModal = document.getElementById('previewModal');
@@ -30,10 +41,14 @@ const modalCloseBtn = document.getElementById('modalCloseBtn');
 const modalCloseBottomBtn = document.getElementById('modalCloseBottomBtn');
 const modalCategory = document.getElementById('modalCategory');
 const modalSkillName = document.getElementById('modalSkillName');
+const modalStatusBadge = document.getElementById('modalStatusBadge');
 const tabSkillMd = document.getElementById('tabSkillMd');
 const tabReadmeMd = document.getElementById('tabReadmeMd');
+const tabDiff = document.getElementById('tabDiff');
 const modalContent = document.getElementById('modalContent');
+const btnCloudSync = document.getElementById('btnCloudSync');
 const modalInstallBtn = document.getElementById('modalInstallBtn');
+const modalUpdateBtn = document.getElementById('modalUpdateBtn');
 const toastContainer = document.getElementById('toastContainer');
 
 // Init
@@ -46,6 +61,11 @@ function setupEventListeners() {
   // Target toggle
   btnTargetGlobal.addEventListener('click', () => setTarget('global'));
   btnTargetLocal.addEventListener('click', () => setTarget('local'));
+
+  // Cloud sync from GitHub
+  if (btnCloudSync) {
+    btnCloudSync.addEventListener('click', () => handleCloudSync());
+  }
 
   // Search input
   searchInput.addEventListener('input', (e) => {
@@ -75,10 +95,28 @@ function setupEventListeners() {
     renderCards();
   });
 
+  // Quick Update All from stats bar
+  if (btnQuickUpdateAll) {
+    btnQuickUpdateAll.addEventListener('click', () => {
+      const updateSkillsList = skillsData
+        .filter(s => s.status && s.status[currentTarget] === 'update-available')
+        .map(s => s.name);
+      if (updateSkillsList.length > 0) {
+        handleUpdateSkills(updateSkillsList);
+      }
+    });
+  }
+
   // Batch actions
   btnBatchInstall.addEventListener('click', () => {
     if (selectedSkills.size > 0) {
       handleInstallSkills(Array.from(selectedSkills));
+    }
+  });
+
+  btnBatchUpdate.addEventListener('click', () => {
+    if (selectedSkills.size > 0) {
+      handleUpdateSkills(Array.from(selectedSkills));
     }
   });
 
@@ -97,10 +135,17 @@ function setupEventListeners() {
 
   tabSkillMd.addEventListener('click', () => switchModalTab('skill'));
   tabReadmeMd.addEventListener('click', () => switchModalTab('readme'));
+  tabDiff.addEventListener('click', () => switchModalTab('diff'));
 
   modalInstallBtn.addEventListener('click', () => {
     if (currentPreviewSkill) {
       handleInstallSkills([currentPreviewSkill.name]);
+    }
+  });
+
+  modalUpdateBtn.addEventListener('click', () => {
+    if (currentPreviewSkill) {
+      handleUpdateSkills([currentPreviewSkill.name]);
     }
   });
 }
@@ -116,6 +161,7 @@ function setTarget(target) {
     btnTargetGlobal.classList.remove('active');
     targetPathText.textContent = systemPaths.local || '.agents/skills/';
   }
+  updateStats();
   renderCards();
 }
 
@@ -126,9 +172,38 @@ async function fetchSkills() {
     skillsData = data.skills || [];
     systemPaths = data.paths || { global: '', local: '' };
     renderCategoryChips();
+    updateStats();
     setTarget(currentTarget);
   } catch (err) {
     showToast('Failed to load skills catalog from local server', 'error');
+  }
+}
+
+function updateStats() {
+  const total = skillsData.length;
+  let installed = 0;
+  let updates = 0;
+
+  skillsData.forEach(skill => {
+    const st = skill.status ? skill.status[currentTarget] : 'not-installed';
+    if (st === 'up-to-date') installed++;
+    else if (st === 'update-available') {
+      installed++;
+      updates++;
+    }
+  });
+
+  if (statTotalSkills) statTotalSkills.textContent = total;
+  if (statInstalledSkills) statInstalledSkills.textContent = installed;
+  if (statUpdatesAvailable) statUpdatesAvailable.textContent = updates;
+
+  if (btnQuickUpdateAll && quickUpdateCount) {
+    if (updates > 0) {
+      btnQuickUpdateAll.style.display = 'flex';
+      quickUpdateCount.textContent = updates;
+    } else {
+      btnQuickUpdateAll.style.display = 'none';
+    }
   }
 }
 
@@ -137,9 +212,9 @@ const CATEGORY_ICONS = {
   'Unity': '🟦',
   'Git': '🟩',
   'Dev Tools': '🟨',
+  'Skill Creator': '🛠️',
   'Web': '⚛️',
   'Python': '🐍',
-  '3D': '🎨',
 };
 
 function renderCategoryChips() {
@@ -151,7 +226,6 @@ function renderCategoryChips() {
 
   const uniqueCategories = Object.keys(categoryCounts).sort();
 
-  // If active filter is not valid anymore, reset to 'all'
   if (currentFilterCategory !== 'all' && !categoryCounts[currentFilterCategory]) {
     currentFilterCategory = 'all';
   }
@@ -187,7 +261,6 @@ function getFilteredSkills() {
   });
 }
 
-
 function renderCards() {
   const filtered = getFilteredSkills();
   skillsGrid.innerHTML = '';
@@ -202,12 +275,72 @@ function renderCards() {
   }
 
   filtered.forEach(skill => {
-    const isInstalled = currentTarget === 'global' ? skill.installed.global : skill.installed.local;
+    const skillStatus = skill.status ? skill.status[currentTarget] : 'not-installed';
+    const isInstalled = skillStatus !== 'not-installed';
+    const isUpdateAvailable = skillStatus === 'update-available';
     const isSelected = selectedSkills.has(skill.name);
     const categoryClass = skill.category.toLowerCase().replace(/\s+/g, '');
 
     const card = document.createElement('div');
-    card.className = `skill-card ${isSelected ? 'selected' : ''}`;
+    card.className = `skill-card ${isSelected ? 'selected' : ''} ${isUpdateAvailable ? 'has-update' : ''}`;
+    
+    let statusBadgeHtml = '';
+    if (skillStatus === 'up-to-date') {
+      statusBadgeHtml = `
+        <div class="status-badge installed">
+          <span class="status-dot"></span>
+          Up to Date ✔
+        </div>
+      `;
+    } else if (skillStatus === 'update-available') {
+      statusBadgeHtml = `
+        <div class="status-badge update-available">
+          <span class="status-dot pulsing"></span>
+          Update Available 🔄
+        </div>
+      `;
+    } else {
+      statusBadgeHtml = `
+        <div class="status-badge not-installed">
+          <span class="status-dot"></span>
+          Not Installed
+        </div>
+      `;
+    }
+
+    let actionButtonsHtml = '';
+    if (isUpdateAvailable) {
+      actionButtonsHtml = `
+        <button class="btn btn-warning btn-update" data-skill="${skill.name}" title="Update to latest catalog version">
+          🔄 Update
+        </button>
+        <button class="btn btn-secondary btn-preview" data-skill="${skill.name}">
+          👁️
+        </button>
+        <button class="btn btn-danger btn-uninstall" data-skill="${skill.name}" title="Uninstall skill">
+          🗑️
+        </button>
+      `;
+    } else if (isInstalled) {
+      actionButtonsHtml = `
+        <button class="btn btn-secondary btn-preview" data-skill="${skill.name}">
+          👁️ Preview
+        </button>
+        <button class="btn btn-danger btn-uninstall" data-skill="${skill.name}" title="Uninstall skill">
+          🗑️
+        </button>
+      `;
+    } else {
+      actionButtonsHtml = `
+        <button class="btn btn-secondary btn-preview" data-skill="${skill.name}">
+          👁️ Preview
+        </button>
+        <button class="btn btn-primary btn-install" data-skill="${skill.name}">
+          📥 Install
+        </button>
+      `;
+    }
+
     card.innerHTML = `
       <div>
         <div class="card-top">
@@ -222,24 +355,9 @@ function renderCards() {
       </div>
 
       <div class="card-bottom">
-        <div class="status-badge ${isInstalled ? 'installed' : 'not-installed'}">
-          <span class="status-dot"></span>
-          ${isInstalled ? `Installed (${currentTarget === 'global' ? 'Global' : 'Local'})` : 'Not Installed'}
-        </div>
-
+        ${statusBadgeHtml}
         <div class="card-actions">
-          <button class="btn btn-secondary btn-preview" data-skill="${skill.name}">
-            👁️ Preview
-          </button>
-          ${isInstalled ? `
-            <button class="btn btn-danger btn-uninstall" data-skill="${skill.name}">
-              🗑️
-            </button>
-          ` : `
-            <button class="btn btn-primary btn-install" data-skill="${skill.name}">
-              📥 Install
-            </button>
-          `}
+          ${actionButtonsHtml}
         </div>
       </div>
     `;
@@ -261,10 +379,15 @@ function renderCards() {
       openPreviewModal(skill.name);
     });
 
-    // Action button event
+    // Action button events
     const btnInstall = card.querySelector('.btn-install');
     if (btnInstall) {
       btnInstall.addEventListener('click', () => handleInstallSkills([skill.name]));
+    }
+
+    const btnUpdate = card.querySelector('.btn-update');
+    if (btnUpdate) {
+      btnUpdate.addEventListener('click', () => handleUpdateSkills([skill.name]));
     }
 
     const btnUninstall = card.querySelector('.btn-uninstall');
@@ -284,6 +407,15 @@ function updateBatchBar() {
     batchBar.classList.add('show');
     selectedCountText.textContent = `${count} skill${count > 1 ? 's' : ''} selected`;
     batchInstallCount.textContent = count;
+
+    // Check how many of the selected have updates
+    const updateCount = Array.from(selectedSkills).filter(name => {
+      const found = skillsData.find(s => s.name === name);
+      return found && found.status && found.status[currentTarget] === 'update-available';
+    }).length;
+
+    batchUpdateCount.textContent = updateCount;
+    btnBatchUpdate.style.display = updateCount > 0 ? 'inline-flex' : 'none';
   } else {
     batchBar.classList.remove('show');
     selectAllCheckbox.checked = false;
@@ -315,6 +447,54 @@ async function handleInstallSkills(names) {
   }
 }
 
+async function handleUpdateSkills(names) {
+  showToast(`Updating ${names.length} skill(s) in ${currentTarget}...`, 'info');
+  try {
+    const res = await fetch('/api/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        skills: names,
+        target: currentTarget,
+      }),
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast(`Successfully updated ${names.length} skill(s) to latest version!`, 'success');
+      selectedSkills.clear();
+      await fetchSkills();
+      if (previewModal.classList.contains('show')) closeModal();
+    } else {
+      showToast(result.error || 'Update failed', 'error');
+    }
+  } catch (err) {
+    showToast('Failed to connect to installer server', 'error');
+  }
+}
+
+async function handleCloudSync() {
+  showToast(`Connecting to GitHub Cloud and fetching latest revisions...`, 'info');
+  try {
+    const res = await fetch('/api/remote/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        target: currentTarget,
+      }),
+    });
+    const result = await res.json();
+    if (result.success) {
+      showToast(`Successfully downloaded & synced skills directly from GitHub!`, 'success');
+      selectedSkills.clear();
+      await fetchSkills();
+    } else {
+      showToast(result.error || 'Cloud sync failed', 'error');
+    }
+  } catch (err) {
+    showToast('Failed to connect to GitHub Cloud', 'error');
+  }
+}
+
 async function handleUninstallSkills(names) {
   showToast(`Removing ${names.length} skill(s) from ${currentTarget}...`, 'info');
   try {
@@ -331,6 +511,7 @@ async function handleUninstallSkills(names) {
       showToast(`Successfully removed ${names.length} skill(s)!`, 'success');
       selectedSkills.clear();
       await fetchSkills();
+      if (previewModal.classList.contains('show')) closeModal();
     } else {
       showToast(result.error || 'Uninstall failed', 'error');
     }
@@ -339,33 +520,129 @@ async function handleUninstallSkills(names) {
   }
 }
 
+function parseMarkdown(md) {
+  if (typeof window.marked !== 'undefined' && typeof window.marked.parse === 'function') {
+    return window.marked.parse(md);
+  }
+  // Lightweight internal markdown parser fallback
+  let html = md
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+    .replace(/`([^`]+)`/gim, '<code>$1</code>')
+    .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
+    .replace(/\n\n/gim, '<p></p>')
+    .replace(/\n/gim, '<br />');
+  return html;
+}
+
 async function openPreviewModal(skillName) {
-  modalContent.textContent = 'Loading skill documentation...';
+  modalContent.innerHTML = '<div class="spinner"></div><p>Loading skill documentation & checking diff...</p>';
   previewModal.classList.add('show');
   modalSkillName.textContent = skillName;
 
   try {
-    const res = await fetch(`/api/skill/${encodeURIComponent(skillName)}`);
+    const res = await fetch(`/api/skill/${encodeURIComponent(skillName)}?target=${currentTarget}`);
     currentPreviewSkill = await res.json();
-    modalCategory.textContent = skillName.startsWith('roblox-') ? 'Roblox' : 'Skill';
-    switchModalTab('skill');
+    modalCategory.textContent = currentPreviewSkill.category || 'Skill';
+
+    const skillStatus = currentPreviewSkill.status ? currentPreviewSkill.status[currentTarget] : 'not-installed';
+    if (skillStatus === 'up-to-date') {
+      modalStatusBadge.textContent = 'Up to Date ✔';
+      modalStatusBadge.className = 'status-pill pill-green';
+      modalUpdateBtn.style.display = 'none';
+      modalInstallBtn.style.display = 'none';
+    } else if (skillStatus === 'update-available') {
+      modalStatusBadge.textContent = 'Update Available 🔄';
+      modalStatusBadge.className = 'status-pill pill-orange';
+      modalUpdateBtn.style.display = 'inline-flex';
+      modalInstallBtn.style.display = 'none';
+    } else {
+      modalStatusBadge.textContent = 'Not Installed';
+      modalStatusBadge.className = 'status-pill pill-gray';
+      modalUpdateBtn.style.display = 'none';
+      modalInstallBtn.style.display = 'inline-flex';
+    }
+
+    switchModalTab(currentModalTab || 'skill');
   } catch (err) {
-    modalContent.textContent = 'Failed to load skill documentation.';
+    modalContent.innerHTML = '<p class="color-red">Failed to load skill documentation.</p>';
   }
 }
 
 function switchModalTab(tab) {
   if (!currentPreviewSkill) return;
+  currentModalTab = tab;
+
+  tabSkillMd.classList.toggle('active', tab === 'skill');
+  tabReadmeMd.classList.toggle('active', tab === 'readme');
+  tabDiff.classList.toggle('active', tab === 'diff');
 
   if (tab === 'skill') {
-    tabSkillMd.classList.add('active');
-    tabReadmeMd.classList.remove('active');
-    modalContent.textContent = currentPreviewSkill.skillMd || 'No SKILL.md found.';
-  } else {
-    tabReadmeMd.classList.add('active');
-    tabSkillMd.classList.remove('active');
-    modalContent.textContent = currentPreviewSkill.readmeMd || 'No README.md found.';
+    const content = currentPreviewSkill.skillMd || 'No SKILL.md found.';
+    modalContent.innerHTML = `<div class="rendered-markdown">${parseMarkdown(content)}</div>`;
+  } else if (tab === 'readme') {
+    const content = currentPreviewSkill.readmeMd || 'No README.md found.';
+    modalContent.innerHTML = `<div class="rendered-markdown">${parseMarkdown(content)}</div>`;
+  } else if (tab === 'diff') {
+    renderDiffTab();
   }
+}
+
+function renderDiffTab() {
+  const catalogMd = currentPreviewSkill.skillMd || '';
+  const installedMd = currentPreviewSkill.installedSkillMd;
+
+  if (!installedMd) {
+    modalContent.innerHTML = `
+      <div class="diff-notice">
+        <span class="diff-icon">ℹ️</span>
+        <p>This skill is <strong>not currently installed</strong> in <code>${currentTarget === 'global' ? 'Global Config' : 'Local Workspace'}</code>.<br>
+        Installing will place the master catalog version into your workspace.</p>
+      </div>
+    `;
+    return;
+  }
+
+  if (catalogMd.trim() === installedMd.trim()) {
+    modalContent.innerHTML = `
+      <div class="diff-notice success">
+        <span class="diff-icon">✅</span>
+        <p>Your installed version in <code>${currentTarget === 'global' ? 'Global Config' : 'Local Workspace'}</code> is <strong>identical and 100% up-to-date</strong> with the central catalog.</p>
+      </div>
+    `;
+    return;
+  }
+
+  // Generate line-by-line diff comparison
+  const catLines = catalogMd.split(/\r?\n/);
+  const instLines = installedMd.split(/\r?\n/);
+
+  let diffHtml = `
+    <div class="diff-notice warning">
+      <span class="diff-icon">🔄</span>
+      <p>Differences detected between central catalog (latest) and your installed version in <code>${currentTarget}</code>.</p>
+    </div>
+    <div class="diff-container">
+      <div class="diff-col">
+        <h4>📦 Central Catalog (Latest)</h4>
+        <pre class="diff-code"><code>${escapeHtml(catalogMd)}</code></pre>
+      </div>
+      <div class="diff-col">
+        <h4>📁 Your Installed Version (${currentTarget})</h4>
+        <pre class="diff-code"><code>${escapeHtml(installedMd)}</code></pre>
+      </div>
+    </div>
+  `;
+
+  modalContent.innerHTML = diffHtml;
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function closeModal() {
@@ -389,3 +666,4 @@ function showToast(message, type = 'info') {
     setTimeout(() => toast.remove(), 300);
   }, 3500);
 }
+

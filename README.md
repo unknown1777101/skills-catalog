@@ -1,6 +1,6 @@
 # 🪐 Antigravity Universal Skills Catalog & Manager
 
-A modular collection of production-grade Google Antigravity Agent Skills equipped with an **Interactive CLI** and a modern **Web GUI Dashboard** for granular multi-skill selection and one-click installation to Global or Local workspaces.
+A modular collection of production-grade Google Antigravity Agent Skills equipped with an **Interactive CLI** and a modern **Web GUI Dashboard** for granular multi-skill selection, real-time revision detection, and one-click installation & updates to Global or Local workspaces.
 
 ---
 
@@ -17,6 +17,44 @@ npm install -g git+https://github.com/unknown1777101/skills-catalog.git
 
 ---
 
+## 🔄 Smart Update & Revision Workflow
+
+Whenever a skill receives revisions or rule updates in the central catalog, updating your projects or global environment is instant:
+
+### 1. Update via Web GUI Dashboard
+1. Open the dashboard: `skills-catalog ui` (or double-click `start-ui.bat`).
+2. If any installed skill has revisions, the card will display an animated **`Update Available 🔄`** badge.
+3. Click the **"🔄 Update"** button on individual cards, or click **"🔄 Update All"** in the top stats bar.
+4. Use the **"Revision Comparison (Diff)"** tab in the preview modal to inspect line-by-line differences before applying updates.
+
+### 2. Update via CLI
+```bash
+# Check status and revision diff across all skills
+skills-catalog status --local
+skills-catalog status --global
+
+# Update all currently installed skills in local project workspace
+skills-catalog update --local
+
+# Update specific skill(s)
+skills-catalog update roblox/knit-arch roblox/object-pooling --local
+
+# Update all skills in global config (~/.gemini/config/skills/)
+skills-catalog update --global
+```
+
+### 3. Reverse Sync (Save Project Edits Back to Catalog)
+If you made improvements or prompt adjustments to a skill during daily coding:
+```bash
+# Sync edits from local workspace back into the catalog repository
+skills-catalog sync-from-local
+
+# Sync edits from global config back into the catalog repository
+skills-catalog sync-from-global
+```
+
+---
+
 ## 🖥️ 3 Ways to Use & Install Skills
 
 ### Option 1: 🌐 Modern Web GUI Dashboard (Visual & 1-Click)
@@ -29,13 +67,14 @@ skills-catalog ui
 
 **Web GUI Capabilities**:
 - 🔄 **Target Toggle**: Switch between **Global (`~/.gemini/config/skills/`)** and **Local Workspace (`.agents/skills/`)**.
-- 🔍 **Search & Filter**: Find skills instantly by keyword or category (Roblox, Unity, Git, Dev Tools).
-- ☑️ **Granular Selection**: Pick specific individual skills using checkboxes and click **"Install Selected"**.
-- 👁️ **In-App Markdown Preview**: Read and inspect `SKILL.md` rules and `README.md` usage guides in a modal window before installing.
+- 📊 **Quick Stats Bar**: View total skills, installed counts, and pending updates at a glance.
+- 🔍 **Instant Search & Filter**: Find skills by keyword or category.
+- ☑️ **Batch Operations**: Select multiple skills and execute 1-click **Install**, **Update**, or **Uninstall**.
+- 👁️ **Rich Markdown & Diff Modal**: Formatted `SKILL.md` rules and live revision comparison view.
 
 ---
 
-### Option 2: ⌨️ Interactive Terminal CLI (Terminal Selection)
+### Option 2: ⌨️ Interactive Terminal CLI
 Run the interactive terminal prompt to choose which skills to install:
 
 ```bash
@@ -48,8 +87,14 @@ skills-catalog install
 ### Option 3: ⚡ Direct Command-Line Execution
 
 ```bash
-# List all available skills and their installation status
+# List all available skills and their status
 skills-catalog list
+
+# Detailed status and checksum comparison
+skills-catalog status --local
+
+# Search skills by keyword
+skills-catalog search knit
 
 # Install specific skills directly to Global config
 skills-catalog install roblox-knit-arch roblox-object-pooling --global
@@ -59,6 +104,9 @@ skills-catalog install roblox-responsive-ui roblox-indicator-system --local
 
 # Install all skills at once
 skills-catalog install --all --global
+
+# Update all installed skills
+skills-catalog update --local
 
 # Uninstall specific skills
 skills-catalog uninstall roblox-object-pooling --global
@@ -70,11 +118,11 @@ skills-catalog uninstall roblox-object-pooling --global
 
 | Skill Name | Path | Primary Responsibility |
 |---|---|---|
-| **[`roblox-knit-arch`](./.agents/skills/roblox-knit-arch/)** | `.agents/skills/roblox-knit-arch/` | **Master 5-Layer Clean Architecture**: Domain, Application, Interface/Adapter, Infrastructure, Presentation, Contracts, and 5 Production Pillars (CSP, Trove, Replication, Catalog, Error Enums). |
-| **[`roblox-object-pooling`](./.agents/skills/roblox-object-pooling/)** | `.agents/skills/roblox-object-pooling/` | **Object Pooling**: Pre-warmed pools for fast bullets, damage numbers, and particle effects to eliminate GC lag spikes. |
-| **[`roblox-animation-system`](./.agents/skills/roblox-animation-system/)** | `.agents/skills/roblox-animation-system/` | **Animation Pipeline**: Centralized track caching, `CatalogConfig` asset ID mapping, and frame-perfect marker event synchronization. |
-| **[`roblox-responsive-ui`](./.agents/skills/roblox-responsive-ui/)** | `.agents/skills/roblox-responsive-ui/` | **Cross-Platform Responsive UI**: Model-View-Presenter (MVP), dynamic `UIScale` modifier, 44px touch targets, and `Trove` memory cleanup. |
-| **[`roblox-indicator-system`](./.agents/skills/roblox-indicator-system/)** | `.agents/skills/roblox-indicator-system/` | **Alert & Badge System**: Reactive red-dot and unread counters across UI buttons and navigation tabs. |
+| **[`roblox-knit-arch`](./.agents/skills/roblox-knit-arch/)** | `.agents/skills/roblox/knit-arch/` | **Master 5-Layer Clean Architecture**: Domain, Application, Interface/Adapter, Infrastructure, Presentation, Contracts, and 5 Production Pillars. |
+| **[`roblox-object-pooling`](./.agents/skills/roblox-object-pooling/)** | `.agents/skills/roblox/object-pooling/` | **Object Pooling**: Pre-warmed pools for fast bullets, damage numbers, and particle effects to eliminate GC lag spikes. |
+| **[`roblox-animation-system`](./.agents/skills/roblox-animation-system/)** | `.agents/skills/roblox/animation-system/` | **Animation Pipeline**: Centralized track caching, `CatalogConfig` asset ID mapping, and frame-perfect marker event synchronization. |
+| **[`roblox-responsive-ui`](./.agents/skills/roblox-responsive-ui/)** | `.agents/skills/roblox/responsive-ui/` | **Cross-Platform Responsive UI**: Model-View-Presenter (MVP), dynamic `UIScale` modifier, 44px touch targets, and `Trove` memory cleanup. |
+| **[`roblox-indicator-system`](./.agents/skills/roblox-indicator-system/)** | `.agents/skills/roblox/indicator-system/` | **Alert & Badge System**: Reactive red-dot and unread counters across UI buttons and navigation tabs. |
 
 ---
 
@@ -84,3 +132,4 @@ To audit and validate all skills against the Antigravity Quality Gate (100% comp
 ```bash
 node node_modules/ai-skill-creator/scripts/validate_plugin.js .
 ```
+

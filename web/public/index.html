@@ -6,8 +6,9 @@
   <title>Antigravity Skills Hub & Catalog Manager</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
   <!-- Header / Navigation -->
@@ -21,16 +22,22 @@
         </div>
       </div>
 
-      <div class="target-selector-box">
-        <span class="target-label">Install Target:</span>
-        <div class="target-toggle">
-          <button class="target-btn active" id="btnTargetGlobal" data-target="global">
-            🌐 Global Config
-          </button>
-          <button class="target-btn" id="btnTargetLocal" data-target="local">
-            📁 Local Workspace
-          </button>
+      <div class="nav-actions">
+        <div class="target-selector-box">
+          <span class="target-label">Install Target:</span>
+          <div class="target-toggle">
+            <button class="target-btn active" id="btnTargetGlobal" data-target="global">
+              🌐 Global Config
+            </button>
+            <button class="target-btn" id="btnTargetLocal" data-target="local">
+              📁 Local Workspace
+            </button>
+          </div>
         </div>
+
+        <button class="btn btn-secondary btn-cloud" id="btnCloudSync" title="Fetch latest revisions directly from GitHub">
+          ☁️ Sync from GitHub
+        </button>
       </div>
     </div>
   </header>
@@ -38,15 +45,37 @@
   <!-- Hero Section -->
   <main class="main-container">
     <section class="hero-section">
-      <div class="hero-badge">✨ Modular Agent Skills Catalog</div>
-      <h1 class="hero-title">Manage & Install <span class="gradient-text">Agent Skills</span></h1>
+      <div class="hero-badge">✨ Modular Agent Skills Catalog & Sync Manager</div>
+      <h1 class="hero-title">Manage, Update & Install <span class="gradient-text">Agent Skills</span></h1>
       <p class="hero-subtitle">
-        Browse, preview, and install production-grade AI skills into your Antigravity environment with 1-click.
+        Browse, preview, compare revisions, and seamlessly update production AI skills with 1-click.
       </p>
+      
       <div class="target-path-banner" id="targetPathBanner">
         <span class="path-icon">📂</span>
         <span class="path-label">Destination:</span>
         <code class="path-text" id="targetPathText">~/.gemini/config/skills/</code>
+      </div>
+
+      <!-- Quick Stats Bar -->
+      <div class="stats-bar" id="statsBar">
+        <div class="stat-card">
+          <span class="stat-num" id="statTotalSkills">0</span>
+          <span class="stat-label">Catalog Skills</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num color-green" id="statInstalledSkills">0</span>
+          <span class="stat-label">Installed in Target</span>
+        </div>
+        <div class="stat-card" id="statUpdateBox">
+          <span class="stat-num color-orange" id="statUpdatesAvailable">0</span>
+          <span class="stat-label">Updates Available</span>
+        </div>
+        <div class="stat-card stat-action-card" id="btnQuickUpdateAll" style="display: none;">
+          <button class="btn btn-warning btn-full">
+            🔄 Update All (<span id="quickUpdateCount">0</span>)
+          </button>
+        </div>
       </div>
     </section>
 
@@ -72,6 +101,9 @@
         </label>
       </div>
       <div class="batch-actions">
+        <button class="btn btn-warning" id="btnBatchUpdate">
+          🔄 Update Selected (<span id="batchUpdateCount">0</span>)
+        </button>
         <button class="btn btn-primary" id="btnBatchInstall">
           🚀 Install Selected (<span id="batchInstallCount">0</span>)
         </button>
@@ -85,25 +117,27 @@
     <section class="cards-grid" id="skillsGrid">
       <div class="loading-state">
         <div class="spinner"></div>
-        <p>Loading skills catalog...</p>
+        <p>Loading skills catalog & checking revisions...</p>
       </div>
     </section>
   </main>
 
-  <!-- Markdown Preview Modal -->
+  <!-- Markdown Preview & Diff Modal -->
   <div class="modal-backdrop" id="previewModal">
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title-group">
           <span class="modal-badge" id="modalCategory">Skill</span>
           <h2 class="modal-title" id="modalSkillName">Skill Title</h2>
+          <span class="status-pill" id="modalStatusBadge">Up to Date</span>
         </div>
         <button class="modal-close-btn" id="modalCloseBtn">&times;</button>
       </div>
 
       <div class="modal-tabs">
-        <button class="modal-tab active" id="tabSkillMd">SKILL.md (Rules & Workflow)</button>
+        <button class="modal-tab active" id="tabSkillMd">SKILL.md (Rules & Directives)</button>
         <button class="modal-tab" id="tabReadmeMd">README.md (Usage Guide)</button>
+        <button class="modal-tab" id="tabDiff">🔄 Revision Comparison (Diff)</button>
       </div>
 
       <div class="modal-body">
@@ -114,7 +148,8 @@
 
       <div class="modal-footer">
         <button class="btn btn-secondary" id="modalCloseBottomBtn">Close</button>
-        <button class="btn btn-primary" id="modalInstallBtn">Install This Skill</button>
+        <button class="btn btn-warning" id="modalUpdateBtn" style="display: none;">🔄 Update to Latest</button>
+        <button class="btn btn-primary" id="modalInstallBtn">📥 Install This Skill</button>
       </div>
     </div>
   </div>
