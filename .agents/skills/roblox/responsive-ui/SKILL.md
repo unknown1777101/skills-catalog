@@ -1,13 +1,13 @@
 ---
 name: roblox-responsive-ui
 category: Roblox
-description: Roblox responsive UI patterns, dynamic UIScale modifiers, and Model-View-Presenter (MVP) architecture. Use when creating cross-platform UI/HUDs. DO NOT use for general 5-layer architecture (roblox-knit-arch) or animation caching (roblox-animation-system).
+description: Roblox responsive UI patterns, dynamic UIScale modifiers, and Model-View-Presenter (MVP) architecture (RDK integration). Use when creating cross-platform UI/HUDs. DO NOT use for general 5-layer architecture (roblox-knit-arch) or animation caching (roblox-animation-system).
 ---
 
 # Roblox Responsive UI & MVP Presenter
 
 ## 🎯 Purpose & Scope
-This skill guides the creation of responsive, cross-platform **User Interfaces (UI/HUD)** in Roblox projects using the Model-View-Presenter (MVP) pattern and dynamic viewport scaling (`UIScale`). The goal is to ensure UI components look polished, scale automatically across Mobile, Tablet, Desktop, and Console screens without clipping, and remain decoupled from network/gameplay logic.
+This skill guides the creation of responsive, cross-platform **User Interfaces (UI/HUD)** in Roblox projects using the Model-View-Presenter (MVP) pattern, dynamic viewport scaling (`UIScale`), and verified with the **Roblox Development Kit (RDK)** suite. The goal is to ensure UI components look polished, scale automatically across Mobile, Tablet, Desktop, and Console screens without clipping, and remain decoupled from network/gameplay logic.
 
 ---
 
@@ -89,9 +89,6 @@ This skill guides the creation of responsive, cross-platform **User Interfaces (
 
 ---
 
-## 📚 References
-- For full Luau implementation templates and examples, refer to [references/responsive-ui-guide.md](./references/responsive-ui-guide.md).
-
 ## 🔗 Related Skills
-- **Required**: `roblox-knit-arch` (for 5-layer architectural compliance).
+- **Required**: `roblox-knit-arch` (for 5-layer architectural compliance and `rdk test` runner).
 - **Optional**: `roblox-indicator-system`.

@@ -1,7 +1,7 @@
 ---
 name: roblox-indicator-system
 category: Roblox
-description: Roblox alert indicator and badge system patterns (red-dots, unread counts, attention badges). Use when creating reactive UI indicators. DO NOT use for general architecture (roblox-knit-arch) or animations (roblox-animation-system).
+description: Roblox alert indicator and badge system patterns (red-dots, unread counts, attention badges, RDK integration). Use when creating reactive UI indicators. DO NOT use for general architecture (roblox-knit-arch) or animations (roblox-animation-system).
 ---
 
 # Roblox Alert Indicator & Badge System
@@ -76,6 +76,7 @@ This skill guides the implementation of a centralized, reactive **Alert Indicato
 * [ ] **Reactive Controller**: Are UI badges listening to `IndicatorController.IndicatorChanged` instead of manual polling?
 * [ ] **Pop Animation Active**: Does the badge appear smoothly with a tween animation?
 * [ ] **Trove Managed**: Is the badge presenter registered to `Trove` to prevent orphaned listeners on UI close?
+* [ ] **RDK Verification**: Are state evaluation rules tested via `rdk test`?
 
 ---
 
@@ -83,9 +84,6 @@ This skill guides the implementation of a centralized, reactive **Alert Indicato
 - Decoupled, reactive alert badge and red-dot indicators synchronized seamlessly across all UI navigation elements.
 
 ---
-
-## 📚 References
-- For full Luau implementation templates and examples, refer to [references/indicator-system-guide.md](./references/indicator-system-guide.md).
 
 ## 🔗 Related Skills
 - **Required**: `roblox-knit-arch`, `roblox-responsive-ui`.

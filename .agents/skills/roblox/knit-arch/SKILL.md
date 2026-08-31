@@ -1,16 +1,19 @@
 ---
 name: roblox-knit-arch
 category: Roblox
-description: Roblox + Knit architecture rules (Domain, Application, Adapter/Knit, Infrastructure, Presentation, Contract). Use when designing or implementing Roblox Knit architectures. DO NOT use for project initialization (roblox-init) or git workflows.
+description: Roblox + Knit architecture rules (Domain, Application, Adapter/Knit, Infrastructure, Presentation, Contract, Large-Scale Feature Slicing for 100-1000+ files, Mandatory Domain Unit Testing with RDK - Roblox Development Kit). Use when designing or implementing Roblox Knit architectures. DO NOT use for project initialization (roblox-init) or git workflows.
 ---
 
 # Roblox + Knit Architecture Rules
 
 ## 🎯 Purpose & Scope
-This skill guides the implementation of a production-grade 5-layer clean architecture on Roblox game projects using the Knit framework. The goal is to maintain separation of concerns, improve testability, prevent memory leaks, eliminate latency lag via client-side prediction, and ensure gameplay logic remains independent of the framework/Roblox API.
+This skill guides the implementation of a production-grade 5-layer clean architecture on Roblox game projects using the Knit framework. The goal is to maintain separation of concerns, improve testability, prevent memory leaks, eliminate latency lag via client-side prediction, ensure gameplay logic remains independent of the framework/Roblox API, **scale seamlessly across codebases with hundreds to thousands of files**, and **guarantee codebase correctness through mandatory Domain Unit Testing using RDK (`rdk test`)**.
 
 ## 📌 When to Use
 - Designing new game systems, services, controllers, or features using Roblox + Knit.
+- Organizing large-scale codebases (100–1000+ files) using Feature-Sliced Domain Sharding.
+- Writing mandatory BDD unit tests (`.spec.lua`) for pure Luau Domain logic.
+- Executing unit tests using the **Roblox Development Kit (RDK)** suite.
 - Refactoring monolithic Knit Services or Controllers into clean, modular layers.
 - Establishing testable boundaries and contracts for Roblox codebases.
 
@@ -21,19 +24,91 @@ This skill guides the implementation of a production-grade 5-layer clean archite
 
 ---
 
-## 🛑 Strict Guardrails
+## 🧪 Mandatory Domain Unit Testing (`rdk test`)
+
+* **Golden Rule**: **Every Domain module MUST have accompanying BDD unit tests (`*.spec.lua`) targeting 100% test coverage.**
+* **Mandatory Runner**: Unit tests **MUST** be executed using **[unknown1777101/roblox-development-kit (RDK)](https://github.com/unknown1777101/roblox-development-kit)**:
+  ```powershell
+  rdk test
+  ```
+  Or for targeted project testing:
+  ```powershell
+  rdk test [project-path]
+  ```
+* **Strict Prohibitions**:
+  - ❌ **Using Lune is strictly prohibited.**
+  - ❌ **Never access Roblox Engine APIs (`game`, `Workspace`, `Instance.new()`, etc.) inside Domain unit tests.**
+  - ❌ **Never use `wait()` or `task.wait()` in tests; always inject discrete time increments (deltaTime).**
+* **Test Structure (TestEZ BDD Style)**:
+  Place each spec file alongside the domain module (e.g. `GridMath.spec.lua`, `GladiatorStats.spec.lua`):
+  ```lua
+  return function()
+      local GladiatorStats = require(script.Parent.GladiatorStats)
+
+      describe("GladiatorStats Domain", function()
+          it("should calculate correct step ticks based on agility", function()
+              local attrs = { Strength = 50, Agility = 75, CombatIQ = 50, Endurance = 50, Armor = 10 }
+              local stepTicks = GladiatorStats.CalculateStepTicks(attrs, {})
+              expect(stepTicks).to.equal(2)
+          end)
+      end)
+  end
+  ```
+
+---
+
+## 🏢 Large-Scale Organization Standards (100–1000+ Files)
+
+### 1. Feature-Sliced Architecture (Vertical Domain Sharding)
+Monolithic flat folders (e.g. 200 files in a single `Services/` or `UseCases/` folder) are strictly prohibited.
+* **Rule**: Codebases must be sharded by **Feature / Domain Context**:
+  ```
+  src/
+  ├── shared/
+  │   ├── Core/                           <-- Shared Utilities, Math, Types, Errors
+  │   └── Features/                       <-- Feature Slices
+  │       ├── Combat/                     <-- Combat Domain, UseCases, Grid Systems
+  │       ├── Gladiators/                 <-- Gladiator Entities, Stats, Progression
+  │       ├── Inventory/                  <-- Weapons, Armor, Items
+  │       ├── Narrative/                  <-- Procedural Narrative, Dialects, Logs
+  │       └── Economy/                    <-- Gold, Wagers, Marketplace
+  ├── server/Features/                    <-- Server Knit Services grouped per feature
+  └── client/Features/                    <-- Client Controllers & Presenters grouped per feature
+  ```
+
+### 2. Taxonomic Data Sharding (Rule of 7±2)
+* **Rule**: No directory should contain more than **15–20 files**.
+* When data items (Skills, Items, Weapons, Quests) exceed 20 files, sub-shard hierarchically:
+  `Features/[Feature]/Domain/[DataType]/[Category]/[SubCategory]/[Tier]/`
+  * *Example*: `Features/Combat/Domain/Skills/Swords/OneHanded/Tier1_Novice/`
+
+### 3. Auto-Discovery Indexing (`init.luau` / Barrel Loader)
+* Large subdirectories (containing 50–500 data files) **MUST** provide an `init.luau` or master index module that recursively registers and caches all child modules. Outer layers import the single index rather than hundreds of discrete file paths.
+
+### 4. Standardized File Suffixes
+* **Domain Entity**: `*Entity.lua` (e.g., `GladiatorEntity.lua`)
+* **Domain Config/Def**: `*Config.lua` or `*Def.lua` (e.g., `GladiusSlashDef.lua`)
+* **Domain Unit Test**: `*.spec.lua` (e.g., `GladiatorStats.spec.lua`)
+* **Application UseCase**: `*UseCase.lua` (e.g., `ExecuteSkillUseCase.lua`)
+* **Knit Service**: `*Service.lua` (e.g., `CombatService.lua`)
+* **Knit Controller**: `*Controller.lua` (e.g., `CombatController.lua`)
+* **Presentation View**: `*View.lua` (e.g., `CombatNarrativeView.lua`)
+* **Presentation Presenter**: `*Presenter.lua` (e.g., `CombatNarrativePresenter.lua`)
+
+---
+
+## 🛑 Strict Guardrails (The 5 Layers)
 
 ### 1. Domain Layer
 * **Purpose**: Store core game rules, entities, state models, formulas, and centralized catalogs.
 * **Allowed**:
-  * Pure game rules and calculations
-  * Mathematical formulas and validation logic
+  * Pure game rules, calculations, and formulas
   * Entities and Value Objects
-  * **Centralized Asset Catalog (`CatalogConfig.lua`)**: All `rbxassetid://`, Sound IDs, Animation IDs, Gamepass IDs, and Developer Product IDs must reside here.
+  * **Centralized Asset Catalog (`CatalogConfig.lua`)**: All `rbxassetid://`, Sound IDs, and Animation IDs.
   * **Standardized Error Enums**: e.g., `CombatErrors.OUT_OF_STAMINA`, `InventoryErrors.SLOT_FULL`.
-  * *Examples*: `DamageRules`, `WeaponRules`, `MovementRules`, `EconomyRules`, `Health`, `Weapon`, `Currency`, `CatalogConfig`
+  * **Mandatory Unit Tests (`*.spec.lua`)**: Tested via `rdk test`.
 * **Prohibited**: Using `Knit`, `Workspace`, `DataStore`, `RemoteEvent`, UI, Camera, Animation, VFX, `HttpService`, or direct Roblox physics engine API.
-* **Golden Rule**: **Domain must not depend on any other layer.** It must run as pure Luau and remain testable outside Roblox Studio.
+* **Golden Rule**: **Domain must not depend on any other layer. It must run as pure Luau and remain testable outside Roblox Studio.**
 
 ### 2. Application Layer
 * **Purpose**: Manage the game's flow/use cases ("What should happen when an action is performed?").
@@ -42,11 +117,6 @@ This skill guides the implementation of a production-grade 5-layer clean archite
   * Organizing the execution flow/sequence
   * Calling outer layers via Contracts/Interfaces
   * Returning standardized `Result` objects (`{ Success = boolean, Data = T?, Error = ErrorCode? }`)
-  * *Examples*: `AttackUseCase`, `PurchaseItemUseCase`, `SpawnVehicleUseCase`, `MoveObjectUseCase`, `EquipWeaponUseCase`
-  * *Flow Example (AttackUseCase)*:
-    ```
-    Validate target -> Check cooldown -> Calculate damage -> Apply damage -> Return Result
-    ```
 * **Prohibited**: Calling `Knit.GetService()`, directly accessing `Workspace`, directly accessing `DataStore`, creating UI, playing animations, triggering camera shakes, or spawning VFX.
 * **Golden Rule**: **Application knows WHAT and WHEN, not HOW Roblox performs it.**
 
@@ -54,82 +124,21 @@ This skill guides the implementation of a production-grade 5-layer clean archite
 * **Purpose**: Bridge between the framework/network/input and the Application layer.
 * **Knit Service (Server Boundary)**:
   * Acts as a network endpoint, validation boundary, and caller of the Application UseCase.
-  * *Code Example*:
-    ```lua
-    function CombatService.Client:Attack(player, targetId)
-        return self.AttackUseCase:Execute(player, targetId)
-    end
-    ```
   * *Prohibited*: Writing business/combat logic or database operations directly inside the service endpoint.
 * **Knit Controller (Client Boundary)**:
   * Acts as client entry point, coordinator, and handles event/input bindings and networking.
-  * *Allowed*: Calling Application UseCases, calling Presenters, managing Client-Side Prediction (CSP) triggers, and listening to Server Signals.
   * *Prohibited*: Hosting monolithic UI rendering or physics loops directly in controllers.
 * **Golden Rule**: **Knit is an adapter/framework boundary. Knit is not the Domain and not the Application.**
 
 ### 4. Infrastructure Layer
-* **Purpose**: Technical implementation regarding Roblox API, storage, network transport, or external systems.
-* **Allowed**: `DataStoreService`, `ProfileStore`, `MemoryStore`, `MessagingService`, `HttpService`, `Workspace` operations, Roblox physics/pathfinding APIs, asset loading (`ContentProvider`).
-* **Structure Example**:
-  ```
-  Infrastructure/
-  ├── Persistence/
-  │   └── ProfileStorePlayerRepository
-  ├── Physics/
-  │   └── RobloxPhysicsMover
-  ├── Networking/
-  └── Roblox/
-  ```
-* **Code Example*:
-  ```lua
-  function RobloxPhysicsMover:Move(part, velocity)
-      part.AssemblyLinearVelocity = velocity
-  end
-  ```
-* **Golden Rule**: **Infrastructure answers "How is this done technically?".** Application only interacts with it through contracts (e.g., `IPhysicsMover`, `IPlayerRepository`).
+* **Purpose**: Technical implementation regarding Roblox API, storage, network transport, or spatial conversions.
+* **Allowed**: `DataStoreService`, `ProfileStore`, `Workspace` operations, Roblox physics/pathfinding APIs, spatial coordinate mappers (`GridWorldMapper`).
+* **Golden Rule**: **Infrastructure answers "How is this done technically?".** Application only interacts with it through contracts.
 
 ### 5. Presentation Layer
 * **Purpose**: Manage everything the player sees, hears, or feels (UI, Animation, Camera Shake, VFX, Sound, HUD).
 * **Allowed**: Visual effects, audio playback, layout updates, user inputs, HUD animations, lifecycle cleanup (`Trove`).
-* **Example Flow (Attack Succeeded)**:
-  ```
-  1. Application determines: Damage = 50
-  2. Presentation handles:
-     ├── Play hit animation
-     ├── Show damage indicator (50)
-     ├── Trigger camera shake
-     ├── Play sound effect (from CatalogConfig key)
-     └── Spawn hit VFX
-  ```
 * **Golden Rule**: **Presentation only displays the state/result and does not determine game rules.**
-
----
-
-## 💻 Contracts (Interfaces)
-Use **Contracts** at architectural boundaries when implementation details need to be decoupled.
-
-* **Boundary Schema**:
-  ```
-  Application ──> IPhysicsMover <── RobloxPhysicsMover (Infrastructure)
-  Coordinator ──> ICombatPresenter <── CombatPresenter (Presentation)
-  ```
-* **When to use**:
-  * Implementation is likely to change.
-  * Crossing a boundary between layers (Application ➔ Infrastructure / Presentation).
-  * Required for unit testing/mocking.
-  * Component reusability.
-* **Code Example**:
-  ```lua
-  export type IPhysicsMover = {
-      Move: (
-          self: IPhysicsMover,
-          object: BasePart,
-          velocity: Vector3
-      ) -> ()
-  }
-  ```
-* **When NOT to use**: Simple utility modules like `MathUtils`, `Constants`, basic damage calculations, or helper modules.
-* **Golden Rule**: **Do not create contracts for every module. Only use them at architectural boundaries.**
 
 ---
 
@@ -138,29 +147,25 @@ Use **Contracts** at architectural boundaries when implementation details need t
 ### 1. ⚡ Client-Side Prediction (CSP) & Server Reconciliation
 For latency-sensitive mechanics (combat, stamina, movement, abilities):
 * **Client (Optimistic Flow)**:
-  1. Player inputs action (e.g., Attack/Dash).
-  2. Controller immediately triggers local visual feedback via `Presenter` (play local animation/VFX) and applies predicted local state.
+  1. Player inputs action.
+  2. Controller triggers local visual feedback via `Presenter` and applies predicted local state.
   3. Controller fires network request to `KnitService`.
 * **Server (Authoritative Validation)**:
   1. `KnitService` invokes `UseCase`.
   2. If valid, server state mutates and fires broadcast/result signal.
-  3. If invalid/mismatched, server returns rejection and client **reconciles/rolls back** the predicted state.
+  3. If invalid/mismatched, server returns rejection and client reconciles predicted state.
 
 ### 2. 🧹 Memory Management & Lifecycle Cleanup (`Trove`)
-Memory leaks from orphaned `RBXScriptConnection`, running tweens, unanchored instances, and active signals are prohibited.
-* **Rule**:
-  * Every `Presenter` and `Controller` that binds events, creates instances, or plays tweens **MUST** maintain an internal `Trove` instance.
-  * When a character respawns, UI closes, or module unmounts, invoke `self._trove:Clean()` to guarantee zero memory leaks.
+Memory leaks from orphaned connections, running tweens, and active signals are prohibited.
+* **Rule**: Every `Presenter` and `Controller` that binds events, creates instances, or plays tweens **MUST** maintain an internal `Trove` instance.
 
 ### 3. 📡 State Replication Strategy
-Choose a standardized data replication pattern between Server and Client:
-* **Event-Driven (Knit Signals / RemoteEvents)**: For discrete actions and momentary notifications (e.g., `AttackResult`, `LevelUpToast`).
-* **State-Driven (ProfileStore / Replica / Reflex / Charm)**: For persistent structured session data (e.g., Inventory, Coins, Equipment stats).
-* **Client Local Cache**: Stored in a dedicated Client Repository or Coordinator; Controllers and Presenters read from this local cache, not from direct asynchronous network spam.
+* **Event-Driven (Knit Signals / RemoteEvents)**: For discrete actions and momentary notifications (`CombatBeatBroadcast`).
+* **State-Driven (ProfileStore / Replica / Reflex)**: For persistent structured session data (Inventory, Coins, Equipment stats).
 
 ### 4. 🗄️ Centralized Asset & Config Catalog (`CatalogConfig`)
-* Raw asset IDs (e.g. `rbxassetid://123456`), Animation IDs, Sound IDs, Badge IDs, and Gamepass/DevProduct IDs **MUST NOT** be hardcoded inside Services, Controllers, or Presenters.
-* **Rule**: All asset IDs must be registered in `src/shared/Domain/Config/CatalogConfig.lua`. Outer layers must reference them by semantic keys (e.g., `CatalogConfig.Audio.HitWood`, `CatalogConfig.Product.SpinWheelX1`).
+* Raw asset IDs (`rbxassetid://123456`) **MUST NOT** be hardcoded inside Services, Controllers, or Presenters.
+* **Rule**: All asset IDs must be registered in `src/shared/Domain/Config/CatalogConfig.lua`.
 
 ### 5. ⚠️ Standardized Result & Error Enums
 * Every UseCase must return a standardized Result table:
@@ -171,72 +176,22 @@ Choose a standardized data replication pattern between Server and Client:
       Error: string?,
   }
   ```
-* Error codes must be defined as enums in Domain (e.g., `CombatErrors.OUT_OF_STAMINA`, `CombatErrors.INVALID_TARGET`).
-* The **Presentation Layer** maps these error codes to localized player messages or specific UI error indicators.
-
----
-
-## 📥 Inputs
-- **Required**: Roblox codebase files (Knit Services, Controllers, Domain, Application logic) or feature specification documents.
-- **Optional**: Design patterns or mock contracts for architectural integration.
-
-## 📋 Execution Workflow
-
-1. **Analyze Requirements**:
-   Identify which layer the changes or new features should be placed in (Domain, Application, Adapter, Infrastructure, or Presentation).
-
-2. **Apply Dependency Flow**:
-   Ensure dependencies always point toward the more core logic:
-   * **Server**: Knit Service (Adapter) → Application → Domain.
-   * **Client**: Presentation → Controller (Adapter) → Application → Domain.
-   * **Technical Access**: Application → Contract ← Infrastructure.
-
-3. **Separate Physics Rules from Implementation**:
-   * *Game Rules* (e.g. Max speed, acceleration formulas) ──> **Domain**
-   * *Flow* (e.g. Calculate speed, apply velocity) ──> **Application**
-   * *Roblox API* (e.g. AssemblyLinearVelocity, AlignPosition) ──> **Infrastructure**
-
-4. **Decouple Presentation via Presenters & Trove**:
-   Avoid tight coupling in Controllers. Delegate visual and audio logic to a Presenter and ensure all connections are attached to `Trove`.
-
-5. **Ensure Thin Boundaries**:
-   * **Knit Services**: Keep endpoints thin; forward requests directly to Application UseCases.
-   * **Knit Controllers**: Limit responsibilities to coordinating inputs, managing CSP, and delegating to UseCases and Presenters.
-
----
-
-## 🔀 Decision Rules
-- If logic involves mathematical calculations or game rules → Place in **Domain Layer**.
-- If logic orchestrates player actions (WHAT/WHEN) → Place in **Application Layer (UseCase)**.
-- If logic interacts directly with Roblox Engine API (DataStore, Physics, HTTP) → Place in **Infrastructure Layer**.
-- If logic handles networking endpoints or user input event triggers → Place in **Interface/Adapter Layer (Knit)**.
-- If logic renders UI, plays sounds, shakes camera, or displays VFX → Place in **Presentation Layer**.
 
 ---
 
 ## 🔍 Verification Checklist
 
-* [ ] **Domain Isolation**: Is the Domain free of `Knit`, `Workspace`, `DataStore`, UI, Camera, Animation, VFX, and `HttpService`?
-* [ ] **Application Flow**: Does the Application UseCase only manage flow (WHAT & WHEN) and return a standardized `Result` table?
-* [ ] **Thin Knit Service**: Is the Knit Service thin, acting only as a request endpoint that forwards to UseCases?
-* [ ] **Thin Knit Controller**: Is the Knit Controller delegated to Coordinators/Presenters, without hosting thousand-line UI/physics logic?
-* [ ] **Dependency Direction**: Does the dependency direction flow inward (Presentation/Adapter → Application → Domain)?
-* [ ] **Contract Boundary**: Are Contracts used appropriately at layer boundaries and not on simple utility modules?
-* [ ] **Memory Management (`Trove`)**: Are dynamic connections, tweens, and visual instances in Presenters/Controllers cleaned up using `Trove`?
-* [ ] **Client-Side Prediction (CSP)**: Are latency-sensitive gameplay mechanics predicted locally on the client with server reconciliation?
-* [ ] **Centralized Catalog**: Are all Roblox asset IDs (`rbxassetid://`, Sound IDs, Animation IDs) centralized inside `CatalogConfig.lua` in Domain?
-* [ ] **Error Enums**: Are error codes standardized in Domain and handled cleanly by Presenter?
+* [ ] **Domain Unit Tests Active**: Does every Domain module have a corresponding `.spec.lua` file?
+* [ ] **`rdk test` Passed**: Do all unit tests pass with 100% success via `rdk test`?
+* [ ] **Large-Scale Sharding**: Are folders containing > 20 files properly sub-sharded by category/tier?
+* [ ] **Feature Slicing Active**: Is code segregated by Feature Domain (`Features/Combat`, `Features/Gladiators`) rather than flat layer dumps?
+* [ ] **Auto-Discovery Loader**: Do large data folders provide an index/loader to prevent manual require spam?
+* [ ] **Standardized Suffixes**: Do filenames strictly follow suffixes (`*UseCase.lua`, `*Presenter.lua`, `*Entity.lua`, `*.spec.lua`)?
+* [ ] **Domain Isolation**: Is the Domain 100% pure Luau and testable outside Roblox Studio?
+* [ ] **Trove Managed**: Are dynamic connections, tweens, and visual instances cleaned up using `Trove`?
+* [ ] **Centralized Catalog**: Are all asset IDs centralized inside `CatalogConfig.lua` in Domain?
 
 ---
 
 ## 📤 Output
-- Roblox game modules structured and organized into five clean architectural layers (Domain, Application, Interface/Adapter, Infrastructure, Presentation) with dependency flow pointing inward.
-
----
-
-## 📚 References
-- For a complete reference implementation (directory structure, code templates for all 5 layers + contracts, Trove, CatalogConfig, and CSP sequence flows), refer to [references/layered-architecture-examples.md](./references/layered-architecture-examples.md).
-
-## 🔗 Related Skills
-- **Required**: `project-initialization` (for initial repo scaffolding).
-- **Optional**: `dev-tool-creation`, `git`.
+- Scalable, modular Roblox game codebases organized into feature slices and 5 clean architectural layers with 100% verified unit test coverage using **RDK (`rdk test`)**.

@@ -1,7 +1,7 @@
 ---
 name: roblox-object-pooling
 category: Roblox
-description: Roblox object pooling patterns (VFX, projectiles, sounds, UI indicators). Use when designing or creating object pools to prevent GC lag spikes. DO NOT use for general architecture rules (roblox-knit-arch) or project initialization.
+description: Roblox object pooling patterns (VFX, projectiles, sounds, UI indicators, RDK integration). Use when designing or creating object pools to prevent GC lag spikes. DO NOT use for general architecture rules (roblox-knit-arch) or project initialization.
 ---
 
 # Roblox Object Pooling
@@ -98,9 +98,6 @@ This skill provides deterministic patterns and guidelines for implementing high-
 
 ---
 
-## 📚 References
-- For full Luau implementation templates and examples, refer to [references/object-pooling-guide.md](./references/object-pooling-guide.md).
-
 ## 🔗 Related Skills
-- **Required**: `roblox-knit-arch` (for 5-layer architectural compliance).
+- **Required**: `roblox-knit-arch` (for 5-layer architectural compliance and `rdk test` runner).
 - **Optional**: `roblox-animation-system`.

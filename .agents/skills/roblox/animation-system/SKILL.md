@@ -1,13 +1,13 @@
 ---
 name: roblox-animation-system
 category: Roblox
-description: Roblox centralized animation management (caching, track pooling, CatalogConfig IDs, crossfades). Use when playing or loading character/NPC animations. DO NOT use for general architecture (roblox-knit-arch) or object pooling (roblox-object-pooling).
+description: Roblox centralized animation management (caching, track pooling, CatalogConfig IDs, crossfades, RDK integration). Use when playing or loading character/NPC animations. DO NOT use for general architecture (roblox-knit-arch) or object pooling (roblox-object-pooling).
 ---
 
 # Roblox Centralized Animation System
 
 ## 🎯 Purpose & Scope
-This skill guides the implementation of a centralized, high-performance **Animation Pipeline** in Roblox Luau projects. The goal is to eliminate redundant `Animator:LoadAnimation()` calls, prevent animation track leaks, centralize asset IDs, and synchronize combat/ability visuals seamlessly via animation events.
+This skill guides the implementation of a centralized, high-performance **Animation Pipeline** in Roblox Luau projects using the Knit framework and verified with the **Roblox Development Kit (RDK)** suite. The goal is to eliminate redundant `Animator:LoadAnimation()` calls, prevent animation track leaks, centralize asset IDs in Domain, and synchronize combat/ability visuals seamlessly via animation events.
 
 ---
 
@@ -44,7 +44,7 @@ This skill guides the implementation of a centralized, high-performance **Animat
 ---
 
 ## 📥 Inputs
-- **Required**: Target character/NPC model (containing `Humanoid` and `Animator`) and desired animation catalog key.
+- **Required**: Target character/NPC model (containing `Humanoid` and `Animator`) and desired animation catalog key from `CatalogConfig.lua`.
 - **Optional**: Fade time, speed multiplier, weight, loop configuration, animation priority.
 
 ---
@@ -84,6 +84,7 @@ This skill guides the implementation of a centralized, high-performance **Animat
 * [ ] **No Ad-hoc Loops**: Is `LoadAnimation()` completely absent from runtime update loops and attack triggers?
 * [ ] **Marker Synchronization**: Are gameplay events triggered via `GetMarkerReachedSignal()` instead of arbitrary delays?
 * [ ] **Trove Cleanup**: Are animation tracks and connections safely cleaned up when characters respawn?
+* [ ] **RDK Spec Verification**: Are accompanying domain animation rules verified via `rdk test`?
 
 ---
 
@@ -92,9 +93,6 @@ This skill guides the implementation of a centralized, high-performance **Animat
 
 ---
 
-## 📚 References
-- For full Luau implementation templates and examples, refer to [references/animation-system-guide.md](./references/animation-system-guide.md).
-
 ## 🔗 Related Skills
-- **Required**: `roblox-knit-arch` (for 5-layer architectural compliance).
+- **Required**: `roblox-knit-arch` (for 5-layer architectural compliance and `rdk test` runner).
 - **Optional**: `roblox-object-pooling`.
