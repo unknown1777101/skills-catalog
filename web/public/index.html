@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Antigravity Skills Hub & Catalog Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo-group">
+        <div class="logo-icon">🪐</div>
+        <div class="logo-text">
+          <span class="logo-title">Antigravity</span>
+          <span class="logo-badge">Skills Hub</span>
+        </div>
+      </div>
+
+      <div class="target-selector-box">
+        <span class="target-label">Install Target:</span>
+        <div class="target-toggle">
+          <button class="target-btn active" id="btnTargetGlobal" data-target="global">
+            🌐 Global Config
+          </button>
+          <button class="target-btn" id="btnTargetLocal" data-target="local">
+            📁 Local Workspace
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="main-container">
+    <section class="hero-section">
+      <div class="hero-badge">✨ Modular Agent Skills Catalog</div>
+      <h1 class="hero-title">Manage & Install <span class="gradient-text">Agent Skills</span></h1>
+      <p class="hero-subtitle">
+        Browse, preview, and install production-grade AI skills into your Antigravity environment with 1-click.
+      </p>
+      <div class="target-path-banner" id="targetPathBanner">
+        <span class="path-icon">📂</span>
+        <span class="path-label">Destination:</span>
+        <code class="path-text" id="targetPathText">~/.gemini/config/skills/</code>
+      </div>
+    </section>
+
+    <!-- Toolbar: Search, Filters & Batch Actions -->
+    <section class="toolbar-section">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search skills by name, keyword, or role...">
+      </div>
+
+      <div class="filter-chips" id="filterChips">
+        <!-- Dynamically generated from available skills -->
+      </div>
+    </section>
+
+    <!-- Batch Actions Bar (Floating/Sticky) -->
+    <div class="batch-bar" id="batchBar">
+      <div class="batch-left">
+        <label class="checkbox-label">
+          <input type="checkbox" id="selectAllCheckbox">
+          <span class="custom-check"></span>
+          <span id="selectedCountText">0 skills selected</span>
+        </label>
+      </div>
+      <div class="batch-actions">
+        <button class="btn btn-primary" id="btnBatchInstall">
+          🚀 Install Selected (<span id="batchInstallCount">0</span>)
+        </button>
+        <button class="btn btn-danger" id="btnBatchUninstall">
+          🗑️ Uninstall Selected
+        </button>
+      </div>
+    </div>
+
+    <!-- Skills Cards Grid -->
+    <section class="cards-grid" id="skillsGrid">
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading skills catalog...</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Markdown Preview Modal -->
+  <div class="modal-backdrop" id="previewModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-badge" id="modalCategory">Skill</span>
+          <h2 class="modal-title" id="modalSkillName">Skill Title</h2>
+        </div>
+        <button class="modal-close-btn" id="modalCloseBtn">&times;</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" id="tabSkillMd">SKILL.md (Rules & Workflow)</button>
+        <button class="modal-tab" id="tabReadmeMd">README.md (Usage Guide)</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="markdown-preview" id="modalContent">
+          Loading content...
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modalCloseBottomBtn">Close</button>
+        <button class="btn btn-primary" id="modalInstallBtn">Install This Skill</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

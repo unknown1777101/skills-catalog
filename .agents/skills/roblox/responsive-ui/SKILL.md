@@ -1,5 +1,6 @@
 ---
 name: roblox-responsive-ui
+category: Roblox
 description: Roblox responsive UI patterns, dynamic UIScale modifiers, and Model-View-Presenter (MVP) architecture. Use when creating cross-platform UI/HUDs. DO NOT use for general 5-layer architecture (roblox-knit-arch) or animation caching (roblox-animation-system).
 ---
 

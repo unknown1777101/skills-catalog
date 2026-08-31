@@ -1,5 +1,6 @@
 ---
 name: roblox-animation-system
+category: Roblox
 description: Roblox centralized animation management (caching, track pooling, CatalogConfig IDs, crossfades). Use when playing or loading character/NPC animations. DO NOT use for general architecture (roblox-knit-arch) or object pooling (roblox-object-pooling).
 ---
 

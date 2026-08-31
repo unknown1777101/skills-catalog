@@ -1,25 +1,30 @@
 {
-  "name": "antigravity-roblox-skills",
+  "name": "antigravity-skills-catalog",
   "version": "1.0.0",
-  "description": "Antigravity Roblox Luau Clean Architecture Skills Catalog",
+  "description": "Universal Google Antigravity Skills Catalog Manager (CLI & Web GUI)",
   "main": "scripts/skills-cli.js",
   "bin": {
-    "skills-roblox": "scripts/skills-cli.js"
+    "skills-catalog": "scripts/skills-cli.js",
+    "skill-hub": "scripts/skills-cli.js"
   },
   "scripts": {
-    "postinstall": "node -e \"const fs=require('fs'), p=require('path').join(__dirname, 'postinstall.js'); if (fs.existsSync(p)) { try { require(p); } catch(e){} }\"",
-    "install:global": "node scripts/skills-cli.js install --global",
-    "install:local": "node scripts/skills-cli.js install --local",
-    "list": "node scripts/skills-cli.js list"
+    "ui": "node web/server.js",
+    "web": "node web/server.js",
+    "start": "node web/server.js",
+    "cli": "node scripts/skills-cli.js",
+    "list": "node scripts/skills-cli.js list",
+    "install:global": "node scripts/skills-cli.js install --all --global",
+    "install:local": "node scripts/skills-cli.js install --all --local"
   },
   "keywords": [
     "antigravity",
-    "roblox",
-    "luau",
-    "clean-architecture",
-    "knit",
     "skills",
-    "ai-agent"
+    "skills-catalog",
+    "roblox",
+    "unity",
+    "git",
+    "ai-agent",
+    "agentic-coding"
   ],
   "author": "Anzar",
   "license": "MIT",

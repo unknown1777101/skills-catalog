@@ -1,5 +1,6 @@
 ---
 name: roblox-object-pooling
+category: Roblox
 description: Roblox object pooling patterns (VFX, projectiles, sounds, UI indicators). Use when designing or creating object pools to prevent GC lag spikes. DO NOT use for general architecture rules (roblox-knit-arch) or project initialization.
 ---
 

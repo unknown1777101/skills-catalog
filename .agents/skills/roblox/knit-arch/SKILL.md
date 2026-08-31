@@ -1,5 +1,6 @@
 ---
 name: roblox-knit-arch
+category: Roblox
 description: Roblox + Knit architecture rules (Domain, Application, Adapter/Knit, Infrastructure, Presentation, Contract). Use when designing or implementing Roblox Knit architectures. DO NOT use for project initialization (roblox-init) or git workflows.
 ---
 

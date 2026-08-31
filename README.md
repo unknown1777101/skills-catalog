@@ -1,53 +1,67 @@
-# 🟥 Antigravity Roblox Clean Architecture Skills Catalog
+# 🪐 Antigravity Universal Skills Catalog & Manager
 
-A modular collection of production-grade Google Antigravity Agent Skills for **Roblox Luau Clean Architecture**, **Knit Framework**, and high-performance game development.
+A modular collection of production-grade Google Antigravity Agent Skills equipped with an **Interactive CLI** and a modern **Web GUI Dashboard** for granular multi-skill selection and one-click installation to Global or Local workspaces.
 
 ---
 
-## 🚀 Installation
+## 🚀 Getting Started
 
-### 1. Global Installation (Recommended for Personal Machine)
-Installs all Roblox skills globally across all projects on your machine (`~/.gemini/config/skills/`):
+### 1. Global Installation (Recommended)
+Install the Skills Manager globally on your machine once:
 
 ```bash
 npm install -g git+https://github.com/unknown1777101/skills-catalog.git
 ```
-*After global installation, Antigravity AI agents in any Roblox project workspace will automatically recognize and use these skills.*
+
+*Once installed globally, the `skills-catalog` command is available everywhere across all terminals on your machine.*
 
 ---
 
-### 2. Local Project Installation (For Team Repositories)
-Installs the package into a specific game project repository:
+## 🖥️ 3 Ways to Use & Install Skills
+
+### Option 1: 🌐 Modern Web GUI Dashboard (Visual & 1-Click)
+Launch the interactive web dashboard in your browser:
 
 ```bash
-npm install git+https://github.com/unknown1777101/skills-catalog.git
+skills-catalog ui
 ```
-*Or manually copy into your active project folder:*
-```bash
-npx skills-roblox install --local
-```
+*Or on Windows: simply **double-click `start-ui.bat`** directly from File Explorer.*
+
+**Web GUI Capabilities**:
+- 🔄 **Target Toggle**: Switch between **Global (`~/.gemini/config/skills/`)** and **Local Workspace (`.agents/skills/`)**.
+- 🔍 **Search & Filter**: Find skills instantly by keyword or category (Roblox, Unity, Git, Dev Tools).
+- ☑️ **Granular Selection**: Pick specific individual skills using checkboxes and click **"Install Selected"**.
+- 👁️ **In-App Markdown Preview**: Read and inspect `SKILL.md` rules and `README.md` usage guides in a modal window before installing.
 
 ---
 
-## 🛠️ CLI Commands
-
-You can manage, list, and install skills anytime using the CLI:
+### Option 2: ⌨️ Interactive Terminal CLI (Terminal Selection)
+Run the interactive terminal prompt to choose which skills to install:
 
 ```bash
-# List all available skills and their descriptions
-npx skills-roblox list
+skills-catalog install
+```
+*The CLI will display a numbered checklist where you can select specific skill numbers (e.g. `1, 3, 4`) or `0` for all, followed by your choice of destination (Global or Local).*
 
-# Install skills globally to ~/.gemini/config/skills/
-npx skills-roblox install --global
+---
 
-# Install skills locally to .agents/skills/ in the current project
-npx skills-roblox install --local
+### Option 3: ⚡ Direct Command-Line Execution
 
-# Remove skills from global config
-npx skills-roblox uninstall --global
+```bash
+# List all available skills and their installation status
+skills-catalog list
 
-# Remove skills from local project
-npx skills-roblox uninstall --local
+# Install specific skills directly to Global config
+skills-catalog install roblox-knit-arch roblox-object-pooling --global
+
+# Install specific skills directly to Local workspace
+skills-catalog install roblox-responsive-ui roblox-indicator-system --local
+
+# Install all skills at once
+skills-catalog install --all --global
+
+# Uninstall specific skills
+skills-catalog uninstall roblox-object-pooling --global
 ```
 
 ---

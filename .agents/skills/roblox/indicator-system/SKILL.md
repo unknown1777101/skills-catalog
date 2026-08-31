@@ -1,5 +1,6 @@
 ---
 name: roblox-indicator-system
+category: Roblox
 description: Roblox alert indicator and badge system patterns (red-dots, unread counts, attention badges). Use when creating reactive UI indicators. DO NOT use for general architecture (roblox-knit-arch) or animations (roblox-animation-system).
 ---
 
