@@ -1,7 +1,7 @@
 ---
 name: roblox-knit-arch
 category: Roblox
-description: Roblox + Knit architecture rules (Domain, Application, Adapter/Knit, Infrastructure, Presentation, Contract, Large-Scale Feature Slicing for 100-1000+ files, Mandatory Domain Unit Testing with RDK - Roblox Development Kit). Use when designing or implementing Roblox Knit architectures. DO NOT use for project initialization (roblox-init) or git workflows.
+description: Enforces Roblox Knit 5-layer Clean Architecture with pure domain rules, authoritative server data providers, client visual presentation, and mandatory RDK unit testing. Use for Knit system architecture. DO NOT use for project init or git.
 ---
 
 # Roblox + Knit Architecture Rules
@@ -21,6 +21,22 @@ This skill guides the implementation of a production-grade 5-layer clean archite
 - **DO NOT** trigger for initializing a new Roblox project repository (use `project-initialization`).
 - **DO NOT** use for general Git version control operations (use `git`).
 - **DO NOT** use for standalone non-Roblox web or Node.js development.
+
+---
+
+## 📋 Execution Workflow
+
+1. **Model Pure Domain (`src/shared/Domain/`)**:
+   - Write pure Luau entities, value objects, mathematical formulas, and centralized catalogs (`CatalogConfig.lua`).
+   - Create accompanying `*.spec.lua` BDD test suites and verify with `rdk test`.
+2. **Implement Application UseCases (`src/shared/Application/`)**:
+   - Orchestrate domain operations, sequence execution flows, and return standardized `Result<T>` tables.
+3. **Build Authoritative Server Services (`src/server/Services/`)**:
+   - Create Knit Services as thin network endpoints and data providers.
+   - Emit state snapshots via Knit Signals; NEVER instantiate 3D visuals or `Lighting` on the server.
+4. **Implement Client Presentation & Controllers (`src/client/`)**:
+   - Build 3D environments, particle VFX, and HUD views in `src/client/Presentation/`.
+   - Use Client Controllers to listen to server data signals and drive presentation views.
 
 ---
 
@@ -122,23 +138,25 @@ Monolithic flat folders (e.g. 200 files in a single `Services/` or `UseCases/` f
 
 ### 3. Interface / Adapter Layer (Knit)
 * **Purpose**: Bridge between the framework/network/input and the Application layer.
-* **Knit Service (Server Boundary)**:
+* **Knit Service (Server Boundary - Pure Data Provider & State Authority)**:
   * Acts as a network endpoint, validation boundary, and caller of the Application UseCase.
-  * *Prohibited*: Writing business/combat logic or database operations directly inside the service endpoint.
-* **Knit Controller (Client Boundary)**:
+  * Emits lightweight data snapshots (DTO tables) via Knit Signals (`ArenaStateUpdated`, `CombatBeatBroadcast`).
+  * *Strictly Prohibited*: Instantiating 3D visual parts in Workspace, manipulating `Lighting`, or executing client visual rendering on the server.
+* **Knit Controller (Client Boundary - Coordinator)**:
   * Acts as client entry point, coordinator, and handles event/input bindings and networking.
+  * Listens to server data signals and commands the Presentation layer to render models, play animations, and display HUD bars.
   * *Prohibited*: Hosting monolithic UI rendering or physics loops directly in controllers.
-* **Golden Rule**: **Knit is an adapter/framework boundary. Knit is not the Domain and not the Application.**
+* **Golden Rule**: **Server provides authoritative raw data; Client coordinates presentation.**
 
 ### 4. Infrastructure Layer
 * **Purpose**: Technical implementation regarding Roblox API, storage, network transport, or spatial conversions.
 * **Allowed**: `DataStoreService`, `ProfileStore`, `Workspace` operations, Roblox physics/pathfinding APIs, spatial coordinate mappers (`GridWorldMapper`).
 * **Golden Rule**: **Infrastructure answers "How is this done technically?".** Application only interacts with it through contracts.
 
-### 5. Presentation Layer
-* **Purpose**: Manage everything the player sees, hears, or feels (UI, Animation, Camera Shake, VFX, Sound, HUD).
-* **Allowed**: Visual effects, audio playback, layout updates, user inputs, HUD animations, lifecycle cleanup (`Trove`).
-* **Golden Rule**: **Presentation only displays the state/result and does not determine game rules.**
+### 5. Presentation Layer (Client-Exclusive Visual Realm)
+* **Purpose**: Manage everything the player sees, hears, or feels (Procedural 3D Arenas, UI, Animation, Camera Shake, VFX, Sound, HUD).
+* **Allowed**: Procedural 3D environment generation (`ColosseumArenaView`), atmosphere lighting setup, visual effects, audio playback, layout updates, user inputs, HUD animations, lifecycle cleanup (`Trove`).
+* **Golden Rule**: **Presentation only renders the state/result from server data and does not determine authoritative game rules.**
 
 ---
 
