@@ -56,6 +56,12 @@ skills-catalog sync-from-local --from "D:\path\to\project"
 skills-catalog sync-from-global
 ```
 
+### 4. Upgrading the Installer & CLI (`self-update`)
+To upgrade the global `skills-catalog` CLI tool itself to the latest release:
+```bash
+skills-catalog self-update
+```
+
 ---
 
 ## 🖥️ 3 Ways to Use & Install Skills
@@ -110,6 +116,9 @@ skills-catalog install --all --global
 
 # Update all installed skills
 skills-catalog update --local
+
+# Upgrade the global CLI tool itself
+skills-catalog self-update
 
 # Uninstall specific skills
 skills-catalog uninstall roblox-object-pooling --global
