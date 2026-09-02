@@ -140,6 +140,8 @@ skills-catalog uninstall roblox-object-pooling --global
 | **[`roblox-animation-system`](./.agents/skills/roblox/animation-system/)** | `.agents/skills/roblox/animation-system/` | **Animation Pipeline**: Centralized track caching, `CatalogConfig` asset ID mapping, and frame-perfect marker event synchronization. |
 | **[`roblox-responsive-ui`](./.agents/skills/roblox/responsive-ui/)** | `.agents/skills/roblox/responsive-ui/` | **Cross-Platform Responsive UI**: Model-View-Presenter (MVP), dynamic `UIScale` modifier, 44px touch targets, and `Trove` memory cleanup. |
 | **[`roblox-indicator-system`](./.agents/skills/roblox/indicator-system/)** | `.agents/skills/roblox/indicator-system/` | **Alert & Badge System**: Reactive red-dot and unread counters across UI buttons and navigation tabs. |
+| **[`roblox-contract-interface`](./.agents/skills/roblox/contract-interface/)** | `.agents/skills/roblox/contract-interface/` | **Contract Interface Types**: Type schemas, DTOs, and interface segregation contracts (`*Types.lua`). |
+| **[`roblox-ioc-container`](./.agents/skills/roblox/ioc-container/)** | `.agents/skills/roblox/ioc-container/` | **IoC & Dependency Injection**: Dynamic singleton/factory container registry and decoupled testing. |
 | **[`game-design-document`](./.agents/skills/game-design-document/)** | `.agents/skills/game-design-document/` | **Game Design Documentation (GDD)**: Structured game design documentation, systems specs, and codebase drift validation. |
 
 ---

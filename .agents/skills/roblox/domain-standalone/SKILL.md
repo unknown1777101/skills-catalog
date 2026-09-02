@@ -42,7 +42,8 @@ This skill provides deterministic rules for creating and maintaining **Standalon
 - If a setting varies per individual entity/unit/weapon (e.g. Damage, Range, HP) → It **MUST** go into `Definitions/<Name>.lua`, NOT in `*Config.lua`. Global configs are strictly for universal system constants.
 - If the domain manages multiple static data blueprints (such as unit definitions) → Use `roblox-domain-definition` with `Definitions/` subfolder.
 - If a state mutation is executed → Always use `table.clone(state)` and return a newly constructed table.
-- **RDK Documentation Standard**: Every `*Config.lua` must include `--- @module` / `--- @brief` and **EVERY single config key must have an explicit comment** explaining its purpose, unit of measure, and default balancing intent.
+- **Anti-Boilerplate & Declarative Composition**: When revising, modifying, or extending domain logic, **NEVER** write duplicated inline logic, copy-pasted calculations, or monolithic spaghetti functions. Extract reusable mathematical models, state transformers, or modifier descriptors cleanly into standalone domains or composable pure functions.
+- **Zero-Token-Fear & Complete Implementation Standard**: **NEVER** use lazy shortcuts, truncated code comments (e.g. `-- ... remaining code ...`, `-- TODO`), or half-baked logic due to fear of token limitations. Write complete, robust, fully typed, production-ready code verified by 100% test suite execution.
 - All comments, docstrings, debug logs, error messages, and validation rejection strings **MUST** be written in **English**.
 
 ## 🔍 Verification Checklist

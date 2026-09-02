@@ -40,6 +40,11 @@ This skill guides the creation of responsive, cross-platform **User Interfaces (
 ### 4. Lifecycle & Memory Cleanup (`Trove`)
 * Every Presenter **MUST** manage a `Trove` instance. All tween animations, signal connections, and temporary GUI clones must be registered to `self._trove` and destroyed on unmount.
 
+### 5. Single Source of Truth (SSOT) from Domain Catalog
+* **Prohibited**: Hardcoding duplicate unit/item stats, card costs, damage numbers, cooldowns, or deck tables (e.g. `CARD_COSTS = { rifle = 2 }` or `ROSTER_DECK = { { Cost = 2 } }`) inside `*Presenter.lua`, `*View.lua`, or `*Controller.lua`.
+* **Mandatory**: The Client Presentation & UI layer **MUST** dynamically query the Shared Domain Catalog (`src/shared/Domain/Catalog/<CatalogName>.lua` via `Catalog.Get(id)` / `Catalog.GetAll()`) for all display labels, cost badges, and role tags.
+* **Authoritative Enforcement**: Client UI only uses domain catalog data for cosmetic display and local affordability rendering (e.g., active button tinting). Final resource deduction and action execution **MUST** always remain authoritatively enforced by the Server (`*UseCase.lua` / `*Service.lua`).
+
 ---
 
 ## 📥 Inputs

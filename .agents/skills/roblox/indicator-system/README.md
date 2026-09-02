@@ -17,14 +17,14 @@ This skill provides deterministic guidelines, architecture patterns, and code te
 
 ---
 
-## 📖 Usage Guide (Panduan Penggunaan)
+## 📖 Developer Usage Guide
 
-This skill is designed to guide Google Antigravity agents or developers when implementing alert badges and unread indicators on Roblox UI elements.
+This skill is designed to guide Google Antigravity agents or developers when creating or refactoring alert indicator systems in Roblox.
 
-### How to Activate/Trigger:
-- **Auto-activation**: Antigravity agents will load this skill automatically when their task matches: *"Roblox alert indicator and badge system patterns (red-dots, unread counts, attention badges)."*
-- **Manual reference**: You can instruct the agent to use it by writing:
-  > "Gunakan skill `roblox-indicator-system` untuk membuat sistem red-dot [nama menu/tombol]"
+### How to Activate / Trigger:
+- **Auto-activation**: Antigravity agents load this skill automatically when the task matches indicator badges, red-dots, or unread notification counters.
+- **Manual instruction**: You can instruct the agent by typing:
+  > "Use the `roblox-indicator-system` skill to build a red-dot indicator for [feature/button name]"
 
 ### Input Parameters:
 When invoking this skill, ensure you provide:

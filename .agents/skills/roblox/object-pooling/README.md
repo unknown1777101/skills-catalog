@@ -16,14 +16,14 @@ This skill provides deterministic guidelines, patterns, and code templates for c
 
 ---
 
-## 📖 Usage Guide (Panduan Penggunaan)
+## 📖 Developer Usage Guide
 
-This skill is designed to guide Google Antigravity agents or developers when implementing object pooling in Roblox game features.
+This skill is designed to guide Google Antigravity agents or developers when creating or refactoring object pooling systems in Roblox.
 
-### How to Activate/Trigger:
-- **Auto-activation**: Antigravity agents will load this skill automatically when their task matches: *"Roblox object pooling patterns (VFX, projectiles, sounds, UI indicators)."*
-- **Manual reference**: You can instruct the agent to use it by writing:
-  > "Gunakan skill `roblox-object-pooling` untuk membuat sistem pooling [peluru/damage indicator/vfx]"
+### How to Activate / Trigger:
+- **Auto-activation**: Antigravity agents load this skill automatically when the task matches object pooling, projectile pooling, or memory optimization.
+- **Manual instruction**: You can instruct the agent by typing:
+  > "Use the `roblox-object-pooling` skill to implement a pool for [projectiles/damage numbers/VFX]"
 
 ### Input Parameters:
 When invoking this skill, ensure you provide:

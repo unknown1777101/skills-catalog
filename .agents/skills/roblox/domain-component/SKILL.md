@@ -45,7 +45,8 @@ This skill provides deterministic rules for creating and maintaining **Domain Co
   - Queries/calculations → Prefix with `Get<Value>` or `Calculate<Value>`.
   - State mutations → Use explicit verbs (e.g. `ApplyDamage`, `Heal`, `Consume`).
   - Boolean state fields → Use `Is<Property>` (e.g. `state.IsDead`); never use `Is...` as a function name.
-- **RDK Documentation Standard**: Every `*Config.lua` must include `--- @module` / `--- @brief` and **EVERY single config key must have an explicit comment** explaining its purpose, unit of measure, and default balancing intent.
+- **Anti-Boilerplate & Single Responsibility**: When revising or extending components, **NEVER** write duplicate logic or cross-contaminate component scopes. Keep components atomic, focused, and pure.
+- **Zero-Token-Fear & Complete Implementation Standard**: **NEVER** truncate code, omit methods, or use placeholder comments (e.g. `-- ... existing code ...`, `-- TODO`) due to fear of token limits. Always write complete, robust, fully typed code passing 100% unit tests.
 - All comments, docstrings, debug logs, error messages, and validation rejection strings **MUST** be written in **English**.
 
 ## 🔍 Verification Checklist

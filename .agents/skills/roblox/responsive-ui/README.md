@@ -17,14 +17,14 @@ This skill provides guidelines, best practices, and code templates for building 
 
 ---
 
-## 📖 Usage Guide (Panduan Penggunaan)
+## 📖 Developer Usage Guide
 
 This skill is designed to guide Google Antigravity agents or developers when creating or refactoring UI components in Roblox.
 
-### How to Activate/Trigger:
-- **Auto-activation**: Antigravity agents will load this skill automatically when their task matches: *"Roblox responsive UI patterns, dynamic UIScale modifiers, and Model-View-Presenter (MVP) architecture."*
-- **Manual reference**: You can instruct the agent to use it by writing:
-  > "Gunakan skill `roblox-responsive-ui` untuk mendesain UI [nama menu/HUD]"
+### How to Activate / Trigger:
+- **Auto-activation**: Antigravity agents load this skill automatically when the task matches responsive UI patterns, dynamic `UIScale` modifiers, or Model-View-Presenter (MVP) architecture.
+- **Manual instruction**: You can instruct the agent by typing:
+  > "Use the `roblox-responsive-ui` skill to design [menu/HUD name]"
 
 ### Input Parameters:
 When invoking this skill, ensure you provide:

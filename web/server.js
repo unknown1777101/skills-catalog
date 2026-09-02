@@ -14,10 +14,48 @@ const os = require('os');
 const crypto = require('crypto');
 const { exec } = require('child_process');
 
-const DEFAULT_PORT = 3700;
+function getSourceSkillsDir(customPath) {
+  if (customPath && fs.existsSync(customPath)) {
+    if (fs.existsSync(path.join(customPath, '.agents', 'skills'))) {
+      return path.join(customPath, '.agents', 'skills');
+    }
+    return customPath;
+  }
+
+  if (process.env.SKILLS_CATALOG_DIR && fs.existsSync(process.env.SKILLS_CATALOG_DIR)) {
+    const envPath = process.env.SKILLS_CATALOG_DIR;
+    if (fs.existsSync(path.join(envPath, '.agents', 'skills'))) {
+      return path.join(envPath, '.agents', 'skills');
+    }
+    return envPath;
+  }
+
+  const currentRepoSkills = path.join(process.cwd(), '.agents', 'skills');
+  if (fs.existsSync(path.join(process.cwd(), 'package.json'))) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
+      if (pkg.name === 'antigravity-skills-catalog' && fs.existsSync(currentRepoSkills)) {
+        return currentRepoSkills;
+      }
+    } catch (e) {}
+  }
+
+  const adjacentCatalog = path.resolve(process.cwd(), '..', 'skills-catalog', '.agents', 'skills');
+  if (fs.existsSync(adjacentCatalog)) {
+    return adjacentCatalog;
+  }
+
+  const driveCatalog = path.resolve('G:/skills-catalog', '.agents', 'skills');
+  if (fs.existsSync(driveCatalog)) {
+    return driveCatalog;
+  }
+
+  return path.join(__dirname, '..', '.agents', 'skills');
+}
+
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const ROOT_DIR = path.join(__dirname, '..');
-const SOURCE_SKILLS_DIR = path.join(ROOT_DIR, '.agents', 'skills');
+const SOURCE_SKILLS_DIR = getSourceSkillsDir();
 
 const GITHUB_REPO = 'unknown1777101/skills-catalog';
 const GITHUB_RAW_BASE = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/`;

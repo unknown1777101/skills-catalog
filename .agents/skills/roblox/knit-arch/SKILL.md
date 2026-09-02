@@ -161,6 +161,11 @@ Memory leaks from orphaned connections, running tweens, and active signals are s
 - **Mandatory Config Documentation**: Every `*Config.lua` and `*Def.lua` module MUST include standard Moonwave/RDK docstring headers (`--- @module`, `--- @brief`) and **EVERY SINGLE key/parameter MUST have an explicit English comment** detailing its purpose, units (seconds, studs, multipliers, percentages), and balancing impact.
 - **English-Only**: All code comments, docstrings, debug logs (`print`, `warn`), runtime errors (`error`), validation error strings (`return false, "..."`), and BDD test descriptions (`describe(...)`, `it(...)`) **MUST** be authored in **standard professional English**.
 
+### 7. 🔌 Strict MVP Pattern & Contract-First Interface Types
+- **Controllers MUST NEVER Access Views Directly**: A Knit Controller is strictly a coordinator. It must ONLY communicate with `Presenter` classes. The `Presenter` owns and controls the `View`.
+- **Contract-First Interface Types**: Whenever a presenter, visual layer, or infrastructure provider can have multiple implementations or is expected to change/evolve (e.g., swapping 3D part tokens to skinned mesh rigs, switching HUD layouts, or alternative audio providers), it **MUST define an explicit Contract/Interface Type** (`*Types.lua` exporting `export type I<Name> = { ... }`). Callers must depend on the Contract Interface, guaranteeing plug-and-play substitution.
+- **Dynamic IoC Container Injection**: Concrete presenters and infrastructure adapters are registered into a centralized IoC Container (`src/shared/Infrastructure/Container/Container.lua`) during client bootstrap (`init.client.lua`). Controllers resolve dependencies dynamically (`Container.Resolve("I<ContractName>", ...)`) based on contract names, ensuring zero static dependencies on concrete presentation classes and enabling frictionless test mocks.
+
 ---
 
 ## 📋 Workflow

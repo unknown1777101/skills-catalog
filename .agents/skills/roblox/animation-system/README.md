@@ -17,14 +17,14 @@ This skill provides guidelines, best practices, and code templates for creating 
 
 ---
 
-## 📖 Usage Guide (Panduan Penggunaan)
+## 📖 Developer Usage Guide
 
-This skill is designed to guide Google Antigravity agents or developers when implementing character, NPC, or weapon animations in Roblox projects.
+This skill is designed to guide Google Antigravity agents or developers when creating or refactoring character animation systems in Roblox.
 
-### How to Activate/Trigger:
-- **Auto-activation**: Antigravity agents will load this skill automatically when their task matches: *"Roblox centralized animation management (caching, track pooling, CatalogConfig IDs, crossfades)."*
-- **Manual reference**: You can instruct the agent to use it by writing:
-  > "Gunakan skill `roblox-animation-system` untuk membuat sistem animasi [karakter/senjata/NPC]"
+### How to Activate / Trigger:
+- **Auto-activation**: Antigravity agents load this skill automatically when the task matches animation caching, AnimationTrack playback, or animation adapters.
+- **Manual instruction**: You can instruct the agent by typing:
+  > "Use the `roblox-animation-system` skill to build an animation system for [character/weapon/NPC]"
 
 ### Input Parameters:
 When invoking this skill, ensure you provide:

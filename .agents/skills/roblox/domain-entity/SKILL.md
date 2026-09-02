@@ -39,6 +39,8 @@ This skill provides deterministic rules for assembling and maintaining **Domain 
 - If the element is an atomic attribute or behavior owned by an entity (e.g. `Health`, `Movement`) → Switch to `roblox-domain-component`.
 - If an entity function performs a mutation on a component state → It **MUST** delegate to the respective component domain (e.g. `HealthDomain.ApplyDamage(state.Health, amount)`); NEVER rewrite component math inline.
 - If an entity mutation occurs → Always return a cloned entity state (`table.clone(state)`) with the updated component state.
+- **Anti-Boilerplate & Pure Delegation**: When modifying or extending composite entities, **NEVER** write duplicated inline calculations or copy-pasted state modifiers. Always delegate state transformations to pure component domains or standalone domains.
+- **Zero-Token-Fear & Complete Implementation Standard**: **NEVER** truncate code, omit methods, or use placeholder comments (e.g. `-- ... existing code ...`, `-- TODO`) due to fear of token limits. Always write complete, robust, fully typed code passing 100% unit tests.
 - All comments, docstrings, debug logs, error messages, and validation rejection strings **MUST** be written in **English**.
 
 ## 🔍 Verification Checklist

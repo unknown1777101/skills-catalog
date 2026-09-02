@@ -35,7 +35,45 @@ function getLocalSkillsDir(cwd) {
   return path.join(cwd || process.cwd(), '.agents', 'skills');
 }
 
-function getSourceSkillsDir() {
+function getSourceSkillsDir(customPath) {
+  if (customPath && fs.existsSync(customPath)) {
+    if (fs.existsSync(path.join(customPath, '.agents', 'skills'))) {
+      return path.join(customPath, '.agents', 'skills');
+    }
+    return customPath;
+  }
+
+  if (process.env.SKILLS_CATALOG_DIR && fs.existsSync(process.env.SKILLS_CATALOG_DIR)) {
+    const envPath = process.env.SKILLS_CATALOG_DIR;
+    if (fs.existsSync(path.join(envPath, '.agents', 'skills'))) {
+      return path.join(envPath, '.agents', 'skills');
+    }
+    return envPath;
+  }
+
+  // 1. If currently inside the skills-catalog git repo (or local repo)
+  const currentRepoSkills = path.join(process.cwd(), '.agents', 'skills');
+  if (fs.existsSync(path.join(process.cwd(), 'package.json'))) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
+      if (pkg.name === 'antigravity-skills-catalog' && fs.existsSync(currentRepoSkills)) {
+        return currentRepoSkills;
+      }
+    } catch (e) {}
+  }
+
+  // 2. Check if sister directory G:\skills-catalog or ../skills-catalog exists
+  const adjacentCatalog = path.resolve(process.cwd(), '..', 'skills-catalog', '.agents', 'skills');
+  if (fs.existsSync(adjacentCatalog)) {
+    return adjacentCatalog;
+  }
+
+  const driveCatalog = path.resolve('G:/skills-catalog', '.agents', 'skills');
+  if (fs.existsSync(driveCatalog)) {
+    return driveCatalog;
+  }
+
+  // 3. Fallback to package directory (__dirname/../.agents/skills)
   return path.join(__dirname, '..', '.agents', 'skills');
 }
 
@@ -447,7 +485,12 @@ async function handleUpdate(args) {
 }
 
 function handleSync(args, direction = 'from-global') {
-  const sourceSkillsDir = getSourceSkillsDir();
+  let customTo = null;
+  const toIdx = args.indexOf('--to') !== -1 ? args.indexOf('--to') : args.indexOf('--dest');
+  if (toIdx !== -1 && args[toIdx + 1]) {
+    customTo = path.resolve(args[toIdx + 1]);
+  }
+  const sourceSkillsDir = getSourceSkillsDir(customTo);
 
   let customFrom = null;
   const fromIdx = args.indexOf('--from') !== -1 ? args.indexOf('--from') : args.indexOf('--path');
@@ -485,10 +528,10 @@ function handleSync(args, direction = 'from-global') {
     return;
   }
 
-  const flagsToIgnore = new Set(['sync', 'sync-from-global', 'sync-from-local', 'sync-from-project', '--global', '-g', '--local', '-l', '--from', '--path']);
+  const flagsToIgnore = new Set(['sync', 'sync-from-global', 'sync-from-local', 'sync-from-project', '--global', '-g', '--local', '-l', '--from', '--path', '--to', '--dest']);
   const specifiedSkills = [];
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--from' || args[i] === '--path') {
+    if (args[i] === '--from' || args[i] === '--path' || args[i] === '--to' || args[i] === '--dest') {
       i++;
       continue;
     }
