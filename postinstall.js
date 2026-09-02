@@ -91,6 +91,9 @@ function postInstall() {
     for (const skill of skills) {
       const src = path.join(sourceDir, skill);
       const dest = path.join(targetBaseDir, skill);
+      if (fs.existsSync(dest)) {
+        fs.rmSync(dest, { recursive: true, force: true });
+      }
       copyFolderRecursiveSync(src, dest);
       console.log(`  ${COLORS.green}[✔ INSTALLED]${COLORS.reset} ${skill}`);
     }

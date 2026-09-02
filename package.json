@@ -7,6 +7,15 @@
     "skills-catalog": "scripts/skills-cli.js",
     "skill-hub": "scripts/skills-cli.js"
   },
+  "files": [
+    ".agents",
+    "scripts",
+    "web",
+    "postinstall.js",
+    "README.md",
+    "package.json",
+    "start-ui.bat"
+  ],
   "scripts": {
     "postinstall": "node postinstall.js",
     "ui": "node web/server.js",

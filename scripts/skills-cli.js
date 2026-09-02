@@ -704,6 +704,21 @@ function handleUI() {
   server.start();
 }
 
+function handleSelfUpdate() {
+  const { execSync } = require('child_process');
+  console.log(`\n${COLORS.bright}=== 🚀 Updating Antigravity Skills Catalog Installer ===${COLORS.reset}`);
+  console.log(`Upgrading global CLI package from: ${COLORS.cyan}https://github.com/${GITHUB_REPO}${COLORS.reset}\n`);
+
+  try {
+    console.log(`Running: ${COLORS.gray}npm install -g git+https://github.com/${GITHUB_REPO}.git --force${COLORS.reset}...\n`);
+    execSync(`npm install -g git+https://github.com/${GITHUB_REPO}.git --force`, { stdio: 'inherit' });
+    console.log(`\n${COLORS.bright}${COLORS.green}✔ Installer and CLI successfully updated to latest version!${COLORS.reset}\n`);
+  } catch (err) {
+    console.error(`\n${COLORS.red}✖ Failed to update installer:${COLORS.reset} ${err.message}\n`);
+    console.log(`Tip: Try running manually:\n  ${COLORS.cyan}npm install -g git+https://github.com/${GITHUB_REPO}.git --force${COLORS.reset}\n`);
+  }
+}
+
 function printHelp() {
   console.log(`
 ${COLORS.bright}🪐 Antigravity Universal Skills Catalog CLI${COLORS.reset}
@@ -735,7 +750,8 @@ ${COLORS.bright}Synchronization (Reverse Sync):${COLORS.reset}
   ${COLORS.cyan}sync-from-global [skill...]${COLORS.reset}      Sync edits made in Global back to Catalog repository
   ${COLORS.cyan}sync-from-local [--from <path>]${COLORS.reset}  Sync edits made in any Project Workspace back to Catalog
 
-${COLORS.bright}Management:${COLORS.reset}
+${COLORS.bright}Management & Upgrades:${COLORS.reset}
+  ${COLORS.cyan}self-update / upgrade-cli${COLORS.reset}        Update the skills-catalog global CLI installer itself
   ${COLORS.cyan}uninstall [skill...]${COLORS.reset}              Remove skills from Global or Local
   ${COLORS.cyan}help${COLORS.reset}                             Display this help manual
 `);
@@ -751,6 +767,11 @@ async function main() {
     case 'dashboard':
     case 'gui':
       handleUI();
+      break;
+    case 'self-update':
+    case 'upgrade-cli':
+    case 'update-cli':
+      handleSelfUpdate();
       break;
     case 'list':
       handleList();
