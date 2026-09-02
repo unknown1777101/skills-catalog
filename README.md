@@ -10,7 +10,7 @@ A modular collection of production-grade Google Antigravity Agent Skills equippe
 Install the Skills Manager globally on your machine once:
 
 ```bash
-npm install -g git+https://github.com/unknown1777101/skills-catalog.git
+npm install -g https://github.com/unknown1777101/skills-catalog/tarball/main
 ```
 
 *Once installed globally, the `skills-catalog` command is available everywhere across all terminals on your machine.*

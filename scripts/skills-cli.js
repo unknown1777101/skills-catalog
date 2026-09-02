@@ -710,12 +710,13 @@ function handleSelfUpdate() {
   console.log(`Upgrading global CLI package from: ${COLORS.cyan}https://github.com/${GITHUB_REPO}${COLORS.reset}\n`);
 
   try {
-    console.log(`Running: ${COLORS.gray}npm install -g git+https://github.com/${GITHUB_REPO}.git --force${COLORS.reset}...\n`);
-    execSync(`npm install -g git+https://github.com/${GITHUB_REPO}.git --force`, { stdio: 'inherit' });
+    const installUrl = `https://github.com/${GITHUB_REPO}/tarball/main`;
+    console.log(`Running: ${COLORS.gray}npm install -g ${installUrl}${COLORS.reset}...\n`);
+    execSync(`npm install -g ${installUrl}`, { stdio: 'inherit' });
     console.log(`\n${COLORS.bright}${COLORS.green}✔ Installer and CLI successfully updated to latest version!${COLORS.reset}\n`);
   } catch (err) {
     console.error(`\n${COLORS.red}✖ Failed to update installer:${COLORS.reset} ${err.message}\n`);
-    console.log(`Tip: Try running manually:\n  ${COLORS.cyan}npm install -g git+https://github.com/${GITHUB_REPO}.git --force${COLORS.reset}\n`);
+    console.log(`Tip: Try running manually:\n  ${COLORS.cyan}npm install -g https://github.com/${GITHUB_REPO}/tarball/main${COLORS.reset}\n`);
   }
 }
 
