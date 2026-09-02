@@ -17,7 +17,7 @@
     "start-ui.bat"
   ],
   "scripts": {
-    "postinstall": "node postinstall.js",
+    "postinstall": "node -e \"try { require('./postinstall.js'); } catch (e) { try { require('./scripts/postinstall.js'); } catch(e2) {} }\"",
     "ui": "node web/server.js",
     "web": "node web/server.js",
     "start": "node web/server.js",
