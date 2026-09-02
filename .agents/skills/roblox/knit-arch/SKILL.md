@@ -1,215 +1,206 @@
 ---
 name: roblox-knit-arch
 category: Roblox
-description: Enforces Roblox Knit 5-layer Clean Architecture with pure domain rules, authoritative server data providers, client visual presentation, and mandatory RDK unit testing. Use for Knit system architecture. DO NOT use for project init or git.
+description: Enforces Roblox Knit 5-layer Clean Architecture with 4 Domain subcategories (Component, Entity, Standalone, Catalog), Feature-Sliced sharding, UseCases, CSP, Trove, and RDK unit testing. DO NOT use for project init or git.
 ---
 
-# Roblox + Knit Architecture Rules
+# 🏛️ Roblox Knit Clean Architecture Standard
 
 ## 🎯 Purpose & Scope
-This skill guides the implementation of a production-grade 5-layer clean architecture on Roblox game projects using the Knit framework. The goal is to maintain separation of concerns, improve testability, prevent memory leaks, eliminate latency lag via client-side prediction, ensure gameplay logic remains independent of the framework/Roblox API, **scale seamlessly across codebases with hundreds to thousands of files**, and **guarantee codebase correctness through mandatory Domain Unit Testing using RDK (`rdk test`)**.
+This skill provides comprehensive, deterministic guidelines for implementing a production-grade **5-Layer Clean Architecture** on Roblox game projects using the **Knit** framework. It guarantees separation of concerns, testability, memory safety via `Trove`, zero latency via Client-Side Prediction (CSP), engine independence in the Domain layer, **scalability for large-scale codebases (100–1000+ files)**, and **mandatory BDD unit testing with RDK (`rdk test`)**.
 
 ## 📌 When to Use
-- Designing new game systems, services, controllers, or features using Roblox + Knit.
-- Organizing large-scale codebases (100–1000+ files) using Feature-Sliced Domain Sharding.
-- Writing mandatory BDD unit tests (`.spec.lua`) for pure Luau Domain logic.
-- Executing unit tests using the **Roblox Development Kit (RDK)** suite.
-- Refactoring monolithic Knit Services or Controllers into clean, modular layers.
-- Establishing testable boundaries and contracts for Roblox codebases.
+- Designing new game features, systems, services, controllers, or presentation views in Roblox + Knit.
+- Organizing the codebase into 5 architectural layers and sharding the Domain into 4 structured subcategories.
+- Implementing Application UseCases with standardized `Result<T>` contracts.
+- Building authoritative thin Knit Services and coordinator Knit Controllers.
+- Creating responsive MVP UI Views and Presenters with `Trove` lifecycle management.
+- Implementing Client-Side Prediction (CSP) and server reconciliation.
 
 ## 🛑 When Not to Use
-- **DO NOT** trigger for initializing a new Roblox project repository (use `project-initialization`).
+- **DO NOT** trigger for initializing a new repository workspace (use `roblox-project-initialization`).
 - **DO NOT** use for general Git version control operations (use `git`).
 - **DO NOT** use for standalone non-Roblox web or Node.js development.
 
----
-
-## 📋 Execution Workflow
-
-1. **Model Pure Domain (`src/shared/Domain/`)**:
-   - Write pure Luau entities, value objects, mathematical formulas, and centralized catalogs (`CatalogConfig.lua`).
-   - Create accompanying `*.spec.lua` BDD test suites and verify with `rdk test`.
-2. **Implement Application UseCases (`src/shared/Application/`)**:
-   - Orchestrate domain operations, sequence execution flows, and return standardized `Result<T>` tables.
-3. **Build Authoritative Server Services (`src/server/Services/`)**:
-   - Create Knit Services as thin network endpoints and data providers.
-   - Emit state snapshots via Knit Signals; NEVER instantiate 3D visuals or `Lighting` on the server.
-4. **Implement Client Presentation & Controllers (`src/client/`)**:
-   - Build 3D environments, particle VFX, and HUD views in `src/client/Presentation/`.
-   - Use Client Controllers to listen to server data signals and drive presentation views.
-
----
-
-## 🧪 Mandatory Domain Unit Testing (`rdk test`)
-
-* **Golden Rule**: **Every Domain module MUST have accompanying BDD unit tests (`*.spec.lua`) targeting 100% test coverage.**
-* **Mandatory Runner**: Unit tests **MUST** be executed using **[unknown1777101/roblox-development-kit (RDK)](https://github.com/unknown1777101/roblox-development-kit)**:
-  ```powershell
-  rdk test
-  ```
-  Or for targeted project testing:
-  ```powershell
-  rdk test [project-path]
-  ```
-* **Strict Prohibitions**:
-  - ❌ **Using Lune is strictly prohibited.**
-  - ❌ **Never access Roblox Engine APIs (`game`, `Workspace`, `Instance.new()`, etc.) inside Domain unit tests.**
-  - ❌ **Never use `wait()` or `task.wait()` in tests; always inject discrete time increments (deltaTime).**
-* **Test Structure (TestEZ BDD Style)**:
-  Place each spec file alongside the domain module (e.g. `GridMath.spec.lua`, `GladiatorStats.spec.lua`):
-  ```lua
-  return function()
-      local GladiatorStats = require(script.Parent.GladiatorStats)
-
-      describe("GladiatorStats Domain", function()
-          it("should calculate correct step ticks based on agility", function()
-              local attrs = { Strength = 50, Agility = 75, CombatIQ = 50, Endurance = 50, Armor = 10 }
-              local stepTicks = GladiatorStats.CalculateStepTicks(attrs, {})
-              expect(stepTicks).to.equal(2)
-          end)
-      end)
-  end
-  ```
-
----
-
-## 🏢 Large-Scale Organization Standards (100–1000+ Files)
-
-### 1. Feature-Sliced Architecture (Vertical Domain Sharding)
-Monolithic flat folders (e.g. 200 files in a single `Services/` or `UseCases/` folder) are strictly prohibited.
-* **Rule**: Codebases must be sharded by **Feature / Domain Context**:
-  ```
-  src/
-  ├── shared/
-  │   ├── Core/                           <-- Shared Utilities, Math, Types, Errors
-  │   └── Features/                       <-- Feature Slices
-  │       ├── Combat/                     <-- Combat Domain, UseCases, Grid Systems
-  │       ├── Gladiators/                 <-- Gladiator Entities, Stats, Progression
-  │       ├── Inventory/                  <-- Weapons, Armor, Items
-  │       ├── Narrative/                  <-- Procedural Narrative, Dialects, Logs
-  │       └── Economy/                    <-- Gold, Wagers, Marketplace
-  ├── server/Features/                    <-- Server Knit Services grouped per feature
-  └── client/Features/                    <-- Client Controllers & Presenters grouped per feature
-  ```
-
-### 2. Taxonomic Data Sharding (Rule of 7±2)
-* **Rule**: No directory should contain more than **15–20 files**.
-* When data items (Skills, Items, Weapons, Quests) exceed 20 files, sub-shard hierarchically:
-  `Features/[Feature]/Domain/[DataType]/[Category]/[SubCategory]/[Tier]/`
-  * *Example*: `Features/Combat/Domain/Skills/Swords/OneHanded/Tier1_Novice/`
-
-### 3. Auto-Discovery Indexing (`init.luau` / Barrel Loader)
-* Large subdirectories (containing 50–500 data files) **MUST** provide an `init.luau` or master index module that recursively registers and caches all child modules. Outer layers import the single index rather than hundreds of discrete file paths.
-
-### 4. Standardized File Suffixes
-* **Domain Entity**: `*Entity.lua` (e.g., `GladiatorEntity.lua`)
-* **Domain Config/Def**: `*Config.lua` or `*Def.lua` (e.g., `GladiusSlashDef.lua`)
-* **Domain Unit Test**: `*.spec.lua` (e.g., `GladiatorStats.spec.lua`)
-* **Application UseCase**: `*UseCase.lua` (e.g., `ExecuteSkillUseCase.lua`)
-* **Knit Service**: `*Service.lua` (e.g., `CombatService.lua`)
-* **Knit Controller**: `*Controller.lua` (e.g., `CombatController.lua`)
-* **Presentation View**: `*View.lua` (e.g., `CombatNarrativeView.lua`)
-* **Presentation Presenter**: `*Presenter.lua` (e.g., `CombatNarrativePresenter.lua`)
+## 📥 Inputs
+- **Required**: Feature specification, domain rules, state models, remote network requirements, and UI presentation wireframes.
+- **Optional**: Asset IDs, Sound IDs, and Animation IDs (must be centralized in `CatalogConfig.lua`).
 
 ---
 
 ## 🛑 Strict Guardrails (The 5 Layers)
 
-### 1. Domain Layer
-* **Purpose**: Store core game rules, entities, state models, formulas, and centralized catalogs.
-* **Allowed**:
-  * Pure game rules, calculations, and formulas
-  * Entities and Value Objects
-  * **Centralized Asset Catalog (`CatalogConfig.lua`)**: All `rbxassetid://`, Sound IDs, and Animation IDs.
-  * **Standardized Error Enums**: e.g., `CombatErrors.OUT_OF_STAMINA`, `InventoryErrors.SLOT_FULL`.
-  * **Mandatory Unit Tests (`*.spec.lua`)**: Tested via `rdk test`.
-* **Prohibited**: Using `Knit`, `Workspace`, `DataStore`, `RemoteEvent`, UI, Camera, Animation, VFX, `HttpService`, or direct Roblox physics engine API.
-* **Golden Rule**: **Domain must not depend on any other layer. It must run as pure Luau and remain testable outside Roblox Studio.**
+### 1. Domain Layer (`src/shared/Domain/`)
+* **Purpose**: Store core game rules, mathematical formulas, state models, and centralized catalogs.
+* **4 Structured Subcategories**:
+  - `Domain/Component/<Name>/`: Reusable atomic behaviors & traits (`Health`, `Movement`, `Stamina`).
+  - `Domain/Entity/<Name>/`: Concrete game world objects composed of child components (`Unit`, `Base`).
+  - `Domain/Standalone/<Name>/`: Global calculations and rules without an entity (`Supply`, `Combat`, `Targeting`).
+  - `Domain/Catalog/<Name>/`: Data-driven blueprints with modular `Definitions/` subfolder (`UnitCatalog`).
+* **Allowed**: Pure Luau rules, math calculations, entity factories, `CatalogConfig.lua`, standardized error enums.
+* **Prohibited**: Calling `Knit`, `Workspace`, `DataStore`, `RemoteEvent`, `Instance.new()`, UI, Camera, Animation, VFX, `HttpService`, `task.wait()`, or Roblox physics engine APIs.
+* **Golden Rule**: **Domain must not depend on any outer layer. It must run as pure Luau and remain testable outside Roblox Studio.**
 
-### 2. Application Layer
-* **Purpose**: Manage the game's flow/use cases ("What should happen when an action is performed?").
+### 2. Application Layer (`src/shared/Application/`)
+* **Purpose**: Manage the game's flow and use cases ("What should happen when an action is performed?").
 * **Allowed**:
-  * Invoking the Domain layer for decisions and calculations
-  * Organizing the execution flow/sequence
-  * Calling outer layers via Contracts/Interfaces
-  * Returning standardized `Result` objects (`{ Success = boolean, Data = T?, Error = ErrorCode? }`)
-* **Prohibited**: Calling `Knit.GetService()`, directly accessing `Workspace`, directly accessing `DataStore`, creating UI, playing animations, triggering camera shakes, or spawning VFX.
+  - Orchestrating the Domain layer for calculations and state mutations.
+  - Organizing execution flow and calling outer layers via Contracts/Interfaces.
+  - Returning standardized `Result<T>` tables:
+    ```lua
+    export type Result<T> = {
+        Success: boolean,
+        Data: T?,
+        Error: string?,
+    }
+    ```
+* **Prohibited**: Calling `Knit.GetService()`, accessing `Workspace` or `DataStore` directly, spawning 3D visuals, playing animations, or creating UI.
 * **Golden Rule**: **Application knows WHAT and WHEN, not HOW Roblox performs it.**
 
-### 3. Interface / Adapter Layer (Knit)
-* **Purpose**: Bridge between the framework/network/input and the Application layer.
-* **Knit Service (Server Boundary - Pure Data Provider & State Authority)**:
-  * Acts as a network endpoint, validation boundary, and caller of the Application UseCase.
-  * Emits lightweight data snapshots (DTO tables) via Knit Signals (`ArenaStateUpdated`, `CombatBeatBroadcast`).
-  * *Strictly Prohibited*: Instantiating 3D visual parts in Workspace, manipulating `Lighting`, or executing client visual rendering on the server.
-* **Knit Controller (Client Boundary - Coordinator)**:
-  * Acts as client entry point, coordinator, and handles event/input bindings and networking.
-  * Listens to server data signals and commands the Presentation layer to render models, play animations, and display HUD bars.
-  * *Prohibited*: Hosting monolithic UI rendering or physics loops directly in controllers.
+### 3. Interface / Adapter Layer (Knit Framework)
+* **Knit Service (`src/server/Services/` — Thin Server State Authority & Data Provider)**:
+  - Acts as a network endpoint, validation boundary, and caller of Application UseCases.
+  - Emits lightweight data snapshots (DTO tables) via Knit Signals (e.g. `BattleStateUpdated`, `CombatBeatBroadcast`).
+  - *Strictly Prohibited*: Instantiating 3D visual parts in Workspace, manipulating `Lighting`, or executing client visual rendering on the server.
+* **Knit Controller (`src/client/Controllers/` — Client Coordinator)**:
+  - Acts as client entry point and coordinator for input bindings and networking.
+  - Listens to server data signals and commands the Presentation layer to render models, play animations, and update HUD bars.
+  - *Prohibited*: Hosting monolithic UI rendering or heavy physics loops directly inside controllers.
 * **Golden Rule**: **Server provides authoritative raw data; Client coordinates presentation.**
 
-### 4. Infrastructure Layer
-* **Purpose**: Technical implementation regarding Roblox API, storage, network transport, or spatial conversions.
-* **Allowed**: `DataStoreService`, `ProfileStore`, `Workspace` operations, Roblox physics/pathfinding APIs, spatial coordinate mappers (`GridWorldMapper`).
-* **Golden Rule**: **Infrastructure answers "How is this done technically?".** Application only interacts with it through contracts.
+### 4. Infrastructure Layer (`src/*/Infrastructure/`)
+* **Purpose**: Technical implementations wrapping Roblox platform APIs, storage, and spatial conversions.
+* **Allowed**: `DataStoreService`, `ProfileStore`, `Workspace` raycasting, pathfinding, and spatial coordinate mappers (`GridWorldMapper`).
+* **Golden Rule**: **Infrastructure answers "How is this done technically?". Application only interacts with it through contracts.**
 
-### 5. Presentation Layer (Client-Exclusive Visual Realm)
-* **Purpose**: Manage everything the player sees, hears, or feels (Procedural 3D Arenas, UI, Animation, Camera Shake, VFX, Sound, HUD).
-* **Allowed**: Procedural 3D environment generation (`ColosseumArenaView`), atmosphere lighting setup, visual effects, audio playback, layout updates, user inputs, HUD animations, lifecycle cleanup (`Trove`).
-* **Golden Rule**: **Presentation only renders the state/result from server data and does not determine authoritative game rules.**
+### 5. Presentation Layer (`src/client/Presentation/` — Client-Exclusive Visual Realm)
+* **Purpose**: Manage everything the player sees, hears, or feels (3D Arenas, UI Views, Presenters, Animation, Camera Shake, VFX, Sound, HUD).
+* **Allowed**: Procedural 3D environment generation, lighting setup, VFX, audio playback, HUD animations, and lifecycle cleanup via `Trove`.
+* **Golden Rule**: **Presentation only renders state/results from server data and never determines authoritative game rules.**
+
+---
+
+## 🏢 Large-Scale Organization Standards (100–1000+ Files)
+
+### 1. Standard 5-Layer & Categorized Domain Layout
+By default, projects organize files by architectural layers with a strict 4-category taxonomy in the Domain layer:
+```text
+src/
+├── shared/
+│   ├── Core/                           <-- Shared Utilities, Math, Types, Errors
+│   ├── Domain/                         <-- Pure Domain Layer (4 Categories)
+│   │   ├── Component/                  <-- Behavior components (Health, Movement)
+│   │   ├── Entity/                     <-- Composite entities (Unit, Base)
+│   │   ├── Standalone/                 <-- Global calculators (Supply, Combat, Targeting)
+│   │   └── Catalog/                    <-- Data catalogs (UnitCatalog, CatalogConfig)
+│   └── Application/                    <-- Application UseCases (*UseCase.lua)
+├── server/
+│   ├── Services/                       <-- Server Knit Services (*Service.lua)
+│   └── Infrastructure/                 <-- Server Adapters (DataStoreAdapter)
+└── client/
+    ├── Controllers/                    <-- Client Knit Controllers (*Controller.lua)
+    ├── Presentation/                   <-- Views (*View.lua) & Presenters (*Presenter.lua)
+    └── Infrastructure/                 <-- Client Adapters (PreloadAdapter)
+```
+
+### 2. Vertical Feature-Sliced Sharding (For Massive Systems)
+For massive multi-game systems exceeding 500+ files, modules may optionally be grouped vertically by feature slice:
+`src/shared/Features/[FeatureName]/Domain/[Component|Entity|Standalone|Catalog]/`
+
+### 3. Taxonomic Data Sharding (Rule of 7±2)
+- No directory should contain more than **15–20 files**.
+- When data items (Units, Weapons, Cards, Quests) exceed 20 files, sub-shard hierarchically:
+  `Domain/Catalog/[CatalogName]/Definitions/[Category]/[Tier]/`
+
+### 4. Standardized File Suffixes
+- **Domain Entity**: `*Entity.lua` (e.g. `UnitEntity.lua`)
+- **Domain Config/Def**: `*Config.lua` or `*Def.lua` (e.g. `SupplyConfig.lua`, `RifleSquad.lua`)
+- **Domain Unit Test**: `*.spec.lua` (e.g. `Combat.spec.lua`)
+- **Application UseCase**: `*UseCase.lua` (e.g. `DeployCardUseCase.lua`)
+- **Knit Service**: `*Service.lua` (e.g. `BattleSessionService.lua`)
+- **Knit Controller**: `*Controller.lua` (e.g. `BattleController.lua`)
+- **Presentation View**: `*View.lua` (e.g. `BattleHUDView.lua`)
+- **Presentation Presenter**: `*Presenter.lua` (e.g. `BattleHUDPresenter.lua`)
+
+### 5. Strict Separation: Global Config vs Individual Definition
+- **`*Config.lua` (Universal System Constants)**: Reserved EXCLUSIVELY for universal system-wide constants, global formulas, baseline scoring weights, and match parameters that apply identically across the entire game (e.g. `StartingSupply = 5`, `MaxSupply = 10`, `BaseRegenInterval = 2.5`, `DamageMatrix`, `RetargetInterval = 0.25`).
+  - *Strictly Prohibited*: Placing individual unit/weapon stats (e.g. `SniperDamage = 120`, `RifleRange = 22`) inside a Config file.
+- **`Definitions/<VariantName>.lua` (Per-Entity / Per-Blueprint Stats)**: Used for ANY parameter whose value differs per individual unit, weapon, card, item, or enemy (e.g. `BaseDamage`, `AttackInterval`, `Range`, `MaxHealth`, `SupplyCost`, `MoveSpeed`, `ArmorClass`). Each variant MUST declare its individual stats in its dedicated file inside `Definitions/`.
 
 ---
 
 ## 🚀 5 Production-Grade Pillars
 
 ### 1. ⚡ Client-Side Prediction (CSP) & Server Reconciliation
-For latency-sensitive mechanics (combat, stamina, movement, abilities):
-* **Client (Optimistic Flow)**:
+For latency-sensitive mechanics (card deployment, unit movement, ability triggers):
+- **Client (Optimistic Flow)**:
   1. Player inputs action.
-  2. Controller triggers local visual feedback via `Presenter` and applies predicted local state.
+  2. Controller applies predicted local visual state via `Presenter`.
   3. Controller fires network request to `KnitService`.
-* **Server (Authoritative Validation)**:
+- **Server (Authoritative Validation)**:
   1. `KnitService` invokes `UseCase`.
-  2. If valid, server state mutates and fires broadcast/result signal.
-  3. If invalid/mismatched, server returns rejection and client reconciles predicted state.
+  2. If valid: Server state mutates and broadcasts confirmation signal.
+  3. If invalid: Server returns rejection and client reconciles predicted state.
 
 ### 2. 🧹 Memory Management & Lifecycle Cleanup (`Trove`)
-Memory leaks from orphaned connections, running tweens, and active signals are prohibited.
-* **Rule**: Every `Presenter` and `Controller` that binds events, creates instances, or plays tweens **MUST** maintain an internal `Trove` instance.
+Memory leaks from orphaned connections, running tweens, and active signals are strictly prohibited.
+- Every `Presenter`, `Controller`, and `View` that binds events or creates instances **MUST** maintain an internal `Trove` instance and clean up on teardown (`trove:Clean()`).
 
 ### 3. 📡 State Replication Strategy
-* **Event-Driven (Knit Signals / RemoteEvents)**: For discrete actions and momentary notifications (`CombatBeatBroadcast`).
-* **State-Driven (ProfileStore / Replica / Reflex)**: For persistent structured session data (Inventory, Coins, Equipment stats).
+- **Event-Driven (Knit Signals)**: For discrete actions and momentary notifications (e.g. `CombatBeatBroadcast`, `CardDeployed`).
+- **State-Driven (ProfileStore / Replica / Data DTOs)**: For persistent structured session data (Player Supply, Base HP, Deck loadout).
 
 ### 4. 🗄️ Centralized Asset & Config Catalog (`CatalogConfig`)
-* Raw asset IDs (`rbxassetid://123456`) **MUST NOT** be hardcoded inside Services, Controllers, or Presenters.
-* **Rule**: All asset IDs must be registered in `src/shared/Domain/Config/CatalogConfig.lua`.
+- Raw asset IDs (`rbxassetid://123456`) **MUST NOT** be hardcoded inside Services, Controllers, or Views.
+- All asset IDs must be registered in `src/shared/Domain/Catalog/CatalogConfig.lua`.
 
 ### 5. ⚠️ Standardized Result & Error Enums
-* Every UseCase must return a standardized Result table:
-  ```lua
-  export type Result<T> = {
-      Success: boolean,
-      Data: T?,
-      Error: string?,
-  }
-  ```
+- Every UseCase must return a standardized `Result<T>` table: `{ Success = boolean, Data = T?, Error = string? }`.
+
+### 6. 🌐 English-Only & RDK Documentation Standard (Configs, Logs & Tests)
+- **Mandatory Config Documentation**: Every `*Config.lua` and `*Def.lua` module MUST include standard Moonwave/RDK docstring headers (`--- @module`, `--- @brief`) and **EVERY SINGLE key/parameter MUST have an explicit English comment** detailing its purpose, units (seconds, studs, multipliers, percentages), and balancing impact.
+- **English-Only**: All code comments, docstrings, debug logs (`print`, `warn`), runtime errors (`error`), validation error strings (`return false, "..."`), and BDD test descriptions (`describe(...)`, `it(...)`) **MUST** be authored in **standard professional English**.
 
 ---
+
+## 📋 Workflow
+1. **Inspect**: Identify feature specifications, domain rules, state structures, and UI requirements.
+2. **Decide**: Categorize domain modules into `Component/`, `Entity/`, `Standalone/`, or `Catalog/`.
+3. **Execute**:
+   - Write Domain modules and accompany them with `*.spec.lua` BDD test suites.
+   - Author Application UseCases (`*UseCase.lua`) in `src/shared/Application/` returning `Result<T>`.
+   - Build Server Knit Services (`*Service.lua`) as thin data providers emitting signals (no 3D visual parts on server).
+   - Build Client Knit Controllers (`*Controller.lua`) as coordinators.
+   - Build Client Presentation Views (`*View.lua`) and Presenters (`*Presenter.lua`) with `Trove` and responsive `UIScale`.
+4. **Validate**: Execute `rdk test` to ensure 100% unit tests pass across all Domain modules.
+5. **Report**: Confirm layer architecture integrity and test verification results to the user.
+
+## 🔀 Decision Rules
+- If logic performs game math, damage calculation, or validation rules → Place in **Domain Layer** as pure Luau.
+- If logic coordinates multiple domains or executes a user action flow → Place in **Application Layer (`*UseCase.lua`)**.
+- If logic handles networking, player sessions, or Knit remote endpoints → Place in **Interface Layer (`*Service.lua` or `*Controller.lua`)**.
+- If logic wraps Roblox platform APIs (DataStore, raycasting) → Place in **Infrastructure Layer**.
+- If logic renders UI, 3D meshes, particles, sounds, or tweens → Place in **Presentation Layer**.
 
 ## 🔍 Verification Checklist
-
-* [ ] **Domain Unit Tests Active**: Does every Domain module have a corresponding `.spec.lua` file?
-* [ ] **`rdk test` Passed**: Do all unit tests pass with 100% success via `rdk test`?
-* [ ] **Large-Scale Sharding**: Are folders containing > 20 files properly sub-sharded by category/tier?
-* [ ] **Feature Slicing Active**: Is code segregated by Feature Domain (`Features/Combat`, `Features/Gladiators`) rather than flat layer dumps?
-* [ ] **Auto-Discovery Loader**: Do large data folders provide an index/loader to prevent manual require spam?
-* [ ] **Standardized Suffixes**: Do filenames strictly follow suffixes (`*UseCase.lua`, `*Presenter.lua`, `*Entity.lua`, `*.spec.lua`)?
-* [ ] **Domain Isolation**: Is the Domain 100% pure Luau and testable outside Roblox Studio?
-* [ ] **Trove Managed**: Are dynamic connections, tweens, and visual instances cleaned up using `Trove`?
-* [ ] **Centralized Catalog**: Are all asset IDs centralized inside `CatalogConfig.lua` in Domain?
-
----
+- [ ] Are Domain modules strictly categorized into `Component/`, `Entity/`, `Standalone/`, or `Catalog/`?
+- [ ] Does every Domain module have an accompanying `.spec.lua` file?
+- [ ] Do all unit tests pass with 100% success via `rdk test`?
+- [ ] Are UseCases returning standardized `Result<T>` tables?
+- [ ] Are Server Services pure data providers without server-side 3D visual instantiation?
+- [ ] Are all dynamic connections, tweens, and instances managed via `Trove`?
+- [ ] Are all asset IDs centralized inside `CatalogConfig.lua`?
 
 ## 📤 Output
-- Scalable, modular Roblox game codebases organized into feature slices and 5 clean architectural layers with 100% verified unit test coverage using **RDK (`rdk test`)**.
+- Scalable, modular Roblox game codebases organized into 5 clean layers and 4 domain subcategories with 100% verified unit test coverage via **RDK (`rdk test`)**.
+
+## 📚 References
+- For component behaviors, refer to [roblox-domain-component](../domain-component/SKILL.md).
+- For entity composition, refer to [roblox-domain-entity](../domain-entity/SKILL.md).
+- For standalone systems, refer to [roblox-domain-standalone](../domain-standalone/SKILL.md).
+- For data definitions, refer to [roblox-domain-definition](../domain-definition/SKILL.md).
+- For testing procedures, refer to [roblox-test-creation](../test-creation/SKILL.md).
+
+## 🔗 Related Skills
+- **Required**: `roblox-test-creation`, `roblox-domain-component`, `roblox-domain-entity`, `roblox-domain-standalone`, `roblox-domain-definition`.
+- **Related**: `roblox-responsive-ui`, `roblox-object-pooling`, `roblox-animation-system`, `roblox-indicator-system`.

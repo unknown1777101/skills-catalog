@@ -119,12 +119,34 @@ function findSkillsRecursive(dir, baseDir = dir) {
 function getAvailableSkills(localCwd) {
   if (!fs.existsSync(SOURCE_SKILLS_DIR)) return [];
 
-  const skillRelPaths = findSkillsRecursive(SOURCE_SKILLS_DIR);
+  const catalogSkillRelPaths = findSkillsRecursive(SOURCE_SKILLS_DIR);
   const globalBase = getGlobalSkillsDir();
   const localBase = getLocalSkillsDir(localCwd);
 
-  return skillRelPaths.map(relPath => {
-    const skillPath = path.join(SOURCE_SKILLS_DIR, relPath);
+  const globalSkillRelPaths = fs.existsSync(globalBase) ? findSkillsRecursive(globalBase) : [];
+  const localSkillRelPaths = fs.existsSync(localBase) ? findSkillsRecursive(localBase) : [];
+
+  const allRelPathsMap = new Map();
+
+  for (const relPath of catalogSkillRelPaths) {
+    allRelPathsMap.set(relPath, { inCatalog: true, relPath, basePath: SOURCE_SKILLS_DIR });
+  }
+
+  for (const relPath of globalSkillRelPaths) {
+    if (!allRelPathsMap.has(relPath)) {
+      allRelPathsMap.set(relPath, { inCatalog: false, relPath, basePath: globalBase, source: 'global' });
+    }
+  }
+
+  for (const relPath of localSkillRelPaths) {
+    if (!allRelPathsMap.has(relPath)) {
+      allRelPathsMap.set(relPath, { inCatalog: false, relPath, basePath: localBase, source: 'local' });
+    }
+  }
+
+  return Array.from(allRelPathsMap.values()).map(item => {
+    const { relPath, inCatalog, basePath } = item;
+    const skillPath = path.join(basePath, relPath);
     const skillMdPath = path.join(skillPath, 'SKILL.md');
     let name = path.basename(relPath);
     let description = '';
@@ -177,9 +199,13 @@ function getAvailableSkills(localCwd) {
     const isInstalledGlobal = !!globalActualDest;
     let globalStatus = 'not-installed';
     if (isInstalledGlobal) {
-      const srcHash = getFolderHash(skillPath);
-      const destHash = getFolderHash(globalActualDest);
-      globalStatus = (srcHash && destHash && srcHash === destHash) ? 'up-to-date' : 'update-available';
+      if (!inCatalog) {
+        globalStatus = 'not-in-catalog';
+      } else {
+        const srcHash = getFolderHash(path.join(SOURCE_SKILLS_DIR, relPath));
+        const destHash = getFolderHash(globalActualDest);
+        globalStatus = (srcHash && destHash && srcHash === destHash) ? 'up-to-date' : 'update-available';
+      }
     }
 
     // Status check for Local
@@ -192,9 +218,13 @@ function getAvailableSkills(localCwd) {
     const isInstalledLocal = !!localActualDest;
     let localStatus = 'not-installed';
     if (isInstalledLocal) {
-      const srcHash = getFolderHash(skillPath);
-      const destHash = getFolderHash(localActualDest);
-      localStatus = (srcHash && destHash && srcHash === destHash) ? 'up-to-date' : 'update-available';
+      if (!inCatalog) {
+        localStatus = 'not-in-catalog';
+      } else {
+        const srcHash = getFolderHash(path.join(SOURCE_SKILLS_DIR, relPath));
+        const destHash = getFolderHash(localActualDest);
+        localStatus = (srcHash && destHash && srcHash === destHash) ? 'up-to-date' : 'update-available';
+      }
     }
 
     return {
@@ -202,6 +232,7 @@ function getAvailableSkills(localCwd) {
       path: relPath,
       category,
       description,
+      inCatalog,
       installed: {
         global: isInstalledGlobal,
         local: isInstalledLocal,
@@ -219,8 +250,17 @@ function getSkillDetail(skillKey, targetType = 'global', localCwd) {
   const found = allSkills.find(s => s.name === skillKey || s.path === skillKey || s.path.endsWith('/' + skillKey));
   
   const skillRelPath = found ? found.path : skillKey;
-  const skillPath = path.join(SOURCE_SKILLS_DIR, skillRelPath);
-  if (!fs.existsSync(skillPath)) return null;
+  const globalBase = getGlobalSkillsDir();
+  const localBase = getLocalSkillsDir(localCwd);
+
+  let skillPath = path.join(SOURCE_SKILLS_DIR, skillRelPath);
+  if (!fs.existsSync(skillPath)) {
+    const globalPath = path.join(globalBase, skillRelPath);
+    const localPath = path.join(localBase, skillRelPath);
+    if (fs.existsSync(globalPath)) skillPath = globalPath;
+    else if (fs.existsSync(localPath)) skillPath = localPath;
+    else return null;
+  }
 
   let skillMd = '';
   let readmeMd = '';
@@ -248,6 +288,7 @@ function getSkillDetail(skillKey, targetType = 'global', localCwd) {
     path: skillRelPath,
     category: found ? found.category : 'General',
     description: found ? found.description : '',
+    inCatalog: found ? found.inCatalog : true,
     status: found ? found.status : { global: 'not-installed', local: 'not-installed' },
     installed: found ? found.installed : { global: false, local: false },
     skillMd,
@@ -340,41 +381,82 @@ async function downloadSkillsFromGitHub(skillKeys, targetType, customPath) {
 
 function syncSkillsToCatalog(skillKeys, sourceTargetType, customPath) {
   let sourceBaseDir;
-  if (sourceTargetType === 'global') {
-    sourceBaseDir = getGlobalSkillsDir();
+  if (customPath) {
+    if (fs.existsSync(path.join(customPath, '.agents', 'skills'))) {
+      sourceBaseDir = path.join(customPath, '.agents', 'skills');
+    } else {
+      sourceBaseDir = customPath;
+    }
   } else if (sourceTargetType === 'local') {
     sourceBaseDir = getLocalSkillsDir();
-  } else if (customPath) {
-    sourceBaseDir = customPath;
   } else {
     sourceBaseDir = getGlobalSkillsDir();
   }
 
-  const allSkills = getAvailableSkills();
+  if (!fs.existsSync(sourceBaseDir)) {
+    return { success: false, error: `Source directory not found: ${sourceBaseDir}` };
+  }
+
+  const sourceFoundSkills = findSkillsRecursive(sourceBaseDir);
+  const catalogSkills = getAvailableSkills();
   const results = [];
+  let addedCount = 0;
+  let updatedCount = 0;
 
-  const targets = (skillKeys && skillKeys.length > 0) ? skillKeys : allSkills.map(s => s.name);
+  const itemsToSync = [];
 
-  for (const key of targets) {
-    const found = allSkills.find(s => s.name === key || s.path === key || s.path.endsWith('/' + key));
-    const relPath = found ? found.path : key;
-    const srcNested = path.join(sourceBaseDir, relPath);
-    const srcFlat = path.join(sourceBaseDir, found ? found.name : path.basename(relPath));
-    const dest = path.join(SOURCE_SKILLS_DIR, relPath);
-
-    let actualSrc = null;
-    if (fs.existsSync(srcNested)) actualSrc = srcNested;
-    else if (fs.existsSync(srcFlat)) actualSrc = srcFlat;
-
-    if (actualSrc) {
-      copyFolderRecursiveSync(actualSrc, dest);
-      results.push({ name: found ? found.name : key, path: relPath, status: 'synced', destPath: dest });
-    } else {
-      results.push({ name: key, status: 'not_found' });
+  if (skillKeys && skillKeys.length > 0) {
+    for (const key of skillKeys) {
+      const matchInSource = sourceFoundSkills.find(s => s === key || s.endsWith('/' + key) || path.basename(s) === key);
+      if (matchInSource) {
+        itemsToSync.push({ relPath: matchInSource, sourcePath: path.join(sourceBaseDir, matchInSource) });
+      } else {
+        const directPath = path.join(sourceBaseDir, key);
+        if (fs.existsSync(path.join(directPath, 'SKILL.md'))) {
+          itemsToSync.push({ relPath: key, sourcePath: directPath });
+        } else {
+          const foundInCatalog = catalogSkills.find(s => s.name === key || s.path === key || s.path.endsWith('/' + key));
+          if (foundInCatalog) {
+            const srcNested = path.join(sourceBaseDir, foundInCatalog.path);
+            const srcFlat = path.join(sourceBaseDir, foundInCatalog.name);
+            if (fs.existsSync(srcNested)) itemsToSync.push({ relPath: foundInCatalog.path, sourcePath: srcNested });
+            else if (fs.existsSync(srcFlat)) itemsToSync.push({ relPath: foundInCatalog.path, sourcePath: srcFlat });
+            else results.push({ name: key, status: 'not_found' });
+          } else {
+            results.push({ name: key, status: 'not_found' });
+          }
+        }
+      }
+    }
+  } else {
+    for (const s of sourceFoundSkills) {
+      itemsToSync.push({ relPath: s, sourcePath: path.join(sourceBaseDir, s) });
     }
   }
 
-  return { success: true, sourcePath: sourceBaseDir, results };
+  for (const item of itemsToSync) {
+    let destRelPath = item.relPath;
+    const dest = path.join(SOURCE_SKILLS_DIR, destRelPath);
+    const isNew = !fs.existsSync(dest);
+
+    if (fs.existsSync(dest)) {
+      fs.rmSync(dest, { recursive: true, force: true });
+    }
+    copyFolderRecursiveSync(item.sourcePath, dest);
+
+    if (isNew) addedCount++;
+    else updatedCount++;
+
+    results.push({
+      name: path.basename(destRelPath),
+      path: destRelPath,
+      status: isNew ? 'added' : 'synced',
+      isNew,
+      destPath: dest
+    });
+  }
+
+  return { success: true, sourcePath: sourceBaseDir, results, addedCount, updatedCount };
 }
 
 function uninstallSkills(skillKeys, targetType, customPath) {

@@ -24,7 +24,7 @@
 
       <div class="nav-actions">
         <div class="target-selector-box">
-          <span class="target-label">Install Target:</span>
+          <span class="target-label">Target:</span>
           <div class="target-toggle">
             <button class="target-btn active" id="btnTargetGlobal" data-target="global">
               🌐 Global Config
@@ -34,6 +34,10 @@
             </button>
           </div>
         </div>
+
+        <button class="btn btn-secondary btn-sync" id="btnSyncToCatalog" title="Sync revisions and new skills from target back into catalog repository">
+          🔄 Sync to Catalog
+        </button>
 
         <button class="btn btn-secondary btn-cloud" id="btnCloudSync" title="Fetch latest revisions directly from GitHub">
           ☁️ Sync from GitHub

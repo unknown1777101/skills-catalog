@@ -47,6 +47,7 @@ const tabReadmeMd = document.getElementById('tabReadmeMd');
 const tabDiff = document.getElementById('tabDiff');
 const modalContent = document.getElementById('modalContent');
 const btnCloudSync = document.getElementById('btnCloudSync');
+const btnSyncToCatalog = document.getElementById('btnSyncToCatalog');
 const modalInstallBtn = document.getElementById('modalInstallBtn');
 const modalUpdateBtn = document.getElementById('modalUpdateBtn');
 const toastContainer = document.getElementById('toastContainer');
@@ -61,6 +62,11 @@ function setupEventListeners() {
   // Target toggle
   btnTargetGlobal.addEventListener('click', () => setTarget('global'));
   btnTargetLocal.addEventListener('click', () => setTarget('local'));
+
+  // Sync to Catalog from Target
+  if (btnSyncToCatalog) {
+    btnSyncToCatalog.addEventListener('click', () => handleSyncToCatalog());
+  }
 
   // Cloud sync from GitHub
   if (btnCloudSync) {
@@ -139,7 +145,11 @@ function setupEventListeners() {
 
   modalInstallBtn.addEventListener('click', () => {
     if (currentPreviewSkill) {
-      handleInstallSkills([currentPreviewSkill.name]);
+      if (!currentPreviewSkill.inCatalog || currentPreviewSkill.status === 'not-in-catalog') {
+        handleSyncToCatalog([currentPreviewSkill.path || currentPreviewSkill.name]);
+      } else {
+        handleInstallSkills([currentPreviewSkill.name]);
+      }
     }
   });
 
@@ -180,9 +190,10 @@ async function fetchSkills() {
 }
 
 function updateStats() {
-  const total = skillsData.length;
+  const total = skillsData.filter(s => s.inCatalog !== false).length;
   let installed = 0;
   let updates = 0;
+  let targetOnly = 0;
 
   skillsData.forEach(skill => {
     const st = skill.status ? skill.status[currentTarget] : 'not-installed';
@@ -190,6 +201,8 @@ function updateStats() {
     else if (st === 'update-available') {
       installed++;
       updates++;
+    } else if (st === 'not-in-catalog' || skill.inCatalog === false) {
+      targetOnly++;
     }
   });
 
@@ -278,11 +291,12 @@ function renderCards() {
     const skillStatus = skill.status ? skill.status[currentTarget] : 'not-installed';
     const isInstalled = skillStatus !== 'not-installed';
     const isUpdateAvailable = skillStatus === 'update-available';
+    const isNotInCatalog = skillStatus === 'not-in-catalog' || skill.inCatalog === false;
     const isSelected = selectedSkills.has(skill.name);
-    const categoryClass = skill.category.toLowerCase().replace(/\s+/g, '');
+    const categoryClass = (skill.category || 'General').toLowerCase().replace(/\s+/g, '');
 
     const card = document.createElement('div');
-    card.className = `skill-card ${isSelected ? 'selected' : ''} ${isUpdateAvailable ? 'has-update' : ''}`;
+    card.className = `skill-card ${isSelected ? 'selected' : ''} ${isUpdateAvailable ? 'has-update' : ''} ${isNotInCatalog ? 'is-target-only' : ''}`;
     
     let statusBadgeHtml = '';
     if (skillStatus === 'up-to-date') {
@@ -299,6 +313,13 @@ function renderCards() {
           Update Available 🔄
         </div>
       `;
+    } else if (isNotInCatalog) {
+      statusBadgeHtml = `
+        <div class="status-badge" style="color: var(--accent-purple);">
+          <span class="status-dot pulsing" style="background: var(--accent-purple); box-shadow: 0 0 8px var(--accent-purple);"></span>
+          Not in Catalog ✨
+        </div>
+      `;
     } else {
       statusBadgeHtml = `
         <div class="status-badge not-installed">
@@ -309,7 +330,16 @@ function renderCards() {
     }
 
     let actionButtonsHtml = '';
-    if (isUpdateAvailable) {
+    if (isNotInCatalog) {
+      actionButtonsHtml = `
+        <button class="btn btn-primary btn-sync-single" data-skill="${skill.path || skill.name}" title="Import this skill into the central catalog repository">
+          📥 Add to Catalog
+        </button>
+        <button class="btn btn-secondary btn-preview" data-skill="${skill.name}">
+          👁️
+        </button>
+      `;
+    } else if (isUpdateAvailable) {
       actionButtonsHtml = `
         <button class="btn btn-warning btn-update" data-skill="${skill.name}" title="Update to latest catalog version">
           🔄 Update
@@ -348,7 +378,7 @@ function renderCards() {
             <input type="checkbox" data-skill="${skill.name}" ${isSelected ? 'checked' : ''}>
             <span class="custom-check"></span>
           </label>
-          <span class="category-tag ${categoryClass}">${skill.category}</span>
+          <span class="category-tag ${categoryClass}">${skill.category || 'General'}</span>
         </div>
         <h3 class="card-name">${skill.name}</h3>
         <p class="card-desc">${skill.description || 'No description provided.'}</p>
@@ -380,6 +410,11 @@ function renderCards() {
     });
 
     // Action button events
+    const btnSyncSingle = card.querySelector('.btn-sync-single');
+    if (btnSyncSingle) {
+      btnSyncSingle.addEventListener('click', () => handleSyncToCatalog([skill.path || skill.name]));
+    }
+
     const btnInstall = card.querySelector('.btn-install');
     if (btnInstall) {
       btnInstall.addEventListener('click', () => handleInstallSkills([skill.name]));
@@ -466,6 +501,34 @@ async function handleUpdateSkills(names) {
       if (previewModal.classList.contains('show')) closeModal();
     } else {
       showToast(result.error || 'Update failed', 'error');
+    }
+  } catch (err) {
+    showToast('Failed to connect to installer server', 'error');
+  }
+}
+
+async function handleSyncToCatalog(names) {
+  const label = currentTarget === 'global' ? 'Global Config' : 'Local Workspace';
+  showToast(`Syncing revisions & new skills from ${label} to catalog...`, 'info');
+  try {
+    const res = await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        skills: names || [],
+        source: currentTarget,
+      }),
+    });
+    const result = await res.json();
+    if (result.success) {
+      const added = result.addedCount || 0;
+      const updated = result.updatedCount || (result.results ? result.results.length - added : 0);
+      showToast(`Successfully synced to catalog! (${added} new skills added, ${updated} updated)`, 'success');
+      selectedSkills.clear();
+      await fetchSkills();
+      if (previewModal.classList.contains('show')) closeModal();
+    } else {
+      showToast(result.error || 'Sync failed', 'error');
     }
   } catch (err) {
     showToast('Failed to connect to installer server', 'error');
@@ -560,11 +623,18 @@ async function openPreviewModal(skillName) {
       modalStatusBadge.className = 'status-pill pill-orange';
       modalUpdateBtn.style.display = 'inline-flex';
       modalInstallBtn.style.display = 'none';
+    } else if (skillStatus === 'not-in-catalog' || currentPreviewSkill.inCatalog === false) {
+      modalStatusBadge.textContent = 'Not in Catalog (New) ✨';
+      modalStatusBadge.className = 'status-pill pill-purple';
+      modalUpdateBtn.style.display = 'none';
+      modalInstallBtn.style.display = 'inline-flex';
+      modalInstallBtn.textContent = '📥 Add to Catalog';
     } else {
       modalStatusBadge.textContent = 'Not Installed';
       modalStatusBadge.className = 'status-pill pill-gray';
       modalUpdateBtn.style.display = 'none';
       modalInstallBtn.style.display = 'inline-flex';
+      modalInstallBtn.textContent = '📥 Install This Skill';
     }
 
     switchModalTab(currentModalTab || 'skill');

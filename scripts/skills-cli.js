@@ -142,8 +142,8 @@ function getAvailableSkills() {
   ];
 }
 
-function getSkillMeta(relPath) {
-  const sourceDir = getSourceSkillsDir();
+function getSkillMeta(relPath, baseDir) {
+  const sourceDir = baseDir || getSourceSkillsDir();
   const skillPath = path.join(sourceDir, relPath);
   const skillMdPath = path.join(skillPath, 'SKILL.md');
   let name = path.basename(relPath);
@@ -169,6 +169,7 @@ function getSkillMeta(relPath) {
     } else if (name.startsWith('roblox-')) category = 'Roblox';
     else if (name.startsWith('unity-')) category = 'Unity';
     else if (name.startsWith('git-')) category = 'Git';
+    else if (name.startsWith('dev-tool')) category = 'Dev Tools';
     else category = 'General';
   }
 
@@ -274,10 +275,30 @@ function handleStatus(args) {
     console.log(`     ${COLORS.gray}Path: ${skillRelPath}${status.dest ? ` (at ${status.dest})` : ''}${COLORS.reset}`);
   });
 
+  // Check for skills existing in targetBaseDir that are NOT in catalog
+  const targetFoundSkills = fs.existsSync(targetBaseDir) ? findSkillsRecursive(targetBaseDir) : [];
+  const targetOnlySkills = targetFoundSkills.filter(s => {
+    const match = skills.find(cat => cat === s || cat.endsWith('/' + s) || path.basename(cat) === s);
+    return !match;
+  });
+
+  if (targetOnlySkills.length > 0) {
+    console.log(`\n${COLORS.bright}✨ New Skills in Target (Not yet in Catalog):${COLORS.reset}`);
+    targetOnlySkills.forEach(s => {
+      const meta = getSkillMeta(s, targetBaseDir);
+      console.log(`  ${COLORS.purple}[➕ Target Only]${COLORS.reset} ${COLORS.bright}${meta.name}${COLORS.reset} (${s})`);
+    });
+    console.log(`💡 Run ${COLORS.cyan}skills-catalog sync-${isGlobal ? 'from-global' : 'from-local'}${COLORS.reset} to import these new skills into the catalog repository.`);
+  }
+
   console.log(`\n${COLORS.bright}Summary:${COLORS.reset}`);
   console.log(`  - Up to Date: ${COLORS.green}${upToDateCount}${COLORS.reset}`);
   console.log(`  - Updates Available: ${updateAvailableCount > 0 ? `${COLORS.yellow}${updateAvailableCount}${COLORS.reset}` : '0'}`);
-  console.log(`  - Not Installed: ${COLORS.gray}${notInstalledCount}${COLORS.reset}\n`);
+  console.log(`  - Not Installed: ${COLORS.gray}${notInstalledCount}${COLORS.reset}`);
+  if (targetOnlySkills.length > 0) {
+    console.log(`  - Target Only (New): ${COLORS.purple}${targetOnlySkills.length}${COLORS.reset}`);
+  }
+  console.log('');
 
   if (updateAvailableCount > 0) {
     console.log(`💡 Run ${COLORS.cyan}skills-catalog update ${isGlobal ? '--global' : '--local'}${COLORS.reset} to apply updates.\n`);
@@ -454,7 +475,7 @@ function handleSync(args, direction = 'from-global') {
     label = `Current Workspace (${targetBaseDir})`;
   }
 
-  console.log(`\n${COLORS.bright}=== 🔄 Syncing Revisions Back to Catalog ===${COLORS.reset}`);
+  console.log(`\n${COLORS.bright}=== 🔄 Syncing Revisions & Skills Back to Catalog ===${COLORS.reset}`);
   console.log(`Source: ${COLORS.cyan}${label}${COLORS.reset}`);
   console.log(`Destination Catalog: ${COLORS.cyan}${sourceSkillsDir}${COLORS.reset}\n`);
 
@@ -476,35 +497,89 @@ function handleSync(args, direction = 'from-global') {
     }
   }
 
-  const skills = getAvailableSkills();
-  const targets = specifiedSkills.length > 0 ? specifiedSkills : skills;
+  const sourceFoundSkills = findSkillsRecursive(targetBaseDir);
+  const catalogSkills = getAvailableSkills();
 
-  let syncedCount = 0;
-  for (const skill of targets) {
-    const match = skills.find(s => s === skill || s.endsWith('/' + skill) || getSkillMeta(s).name === skill);
-    const relPath = match || skill;
+  const itemsToSync = [];
 
-    const sourceSkillPath = path.join(targetBaseDir, relPath);
-    const altSourceSkillPath = path.join(targetBaseDir, path.basename(relPath));
-    const destCatalogPath = path.join(sourceSkillsDir, relPath);
-
-    let actualSource = null;
-    if (fs.existsSync(sourceSkillPath)) actualSource = sourceSkillPath;
-    else if (fs.existsSync(altSourceSkillPath)) actualSource = altSourceSkillPath;
-
-    if (actualSource) {
-      copyFolderRecursiveSync(actualSource, destCatalogPath);
-      console.log(`  ${COLORS.green}[✔ SYNCED]${COLORS.reset} ${relPath} ➔ ${COLORS.gray}${destCatalogPath}${COLORS.reset}`);
-      syncedCount++;
+  if (specifiedSkills.length > 0) {
+    for (const spec of specifiedSkills) {
+      // 1. Try finding in sourceFoundSkills
+      const matchInSource = sourceFoundSkills.find(s => s === spec || s.endsWith('/' + spec) || path.basename(s) === spec || getSkillMeta(s, targetBaseDir).name === spec);
+      if (matchInSource) {
+        itemsToSync.push({ relPath: matchInSource, sourcePath: path.join(targetBaseDir, matchInSource) });
+      } else {
+        // 2. Check direct path in targetBaseDir
+        const directPath = path.join(targetBaseDir, spec);
+        if (fs.existsSync(path.join(directPath, 'SKILL.md'))) {
+          itemsToSync.push({ relPath: spec, sourcePath: directPath });
+        } else {
+          // 3. Check catalog match
+          const matchInCatalog = catalogSkills.find(s => s === spec || s.endsWith('/' + spec) || getSkillMeta(s).name === spec);
+          if (matchInCatalog) {
+            const src1 = path.join(targetBaseDir, matchInCatalog);
+            const src2 = path.join(targetBaseDir, path.basename(matchInCatalog));
+            if (fs.existsSync(src1)) itemsToSync.push({ relPath: matchInCatalog, sourcePath: src1 });
+            else if (fs.existsSync(src2)) itemsToSync.push({ relPath: matchInCatalog, sourcePath: src2 });
+            else console.log(`  ${COLORS.yellow}[!] Skill '${spec}' not found in source:${COLORS.reset} ${targetBaseDir}`);
+          } else {
+            console.log(`  ${COLORS.yellow}[!] Skill '${spec}' not found in source:${COLORS.reset} ${targetBaseDir}`);
+          }
+        }
+      }
+    }
+  } else {
+    // Sync all found skills in source targetBaseDir
+    for (const s of sourceFoundSkills) {
+      itemsToSync.push({ relPath: s, sourcePath: path.join(targetBaseDir, s) });
     }
   }
 
-  if (syncedCount === 0) {
-    console.log(`  ${COLORS.yellow}No matching installed skills found in ${targetBaseDir} to sync.${COLORS.reset}`);
-  } else {
-    console.log(`\n${COLORS.bright}${COLORS.green}Sync Complete!${COLORS.reset} ${syncedCount} skill(s) synchronized back into catalog.`);
-    console.log(`💡 Next step: Review changes with ${COLORS.cyan}git status${COLORS.reset} and push with ${COLORS.cyan}git push${COLORS.reset}\n`);
+  if (itemsToSync.length === 0) {
+    console.log(`  ${COLORS.yellow}No skills found in ${targetBaseDir} to sync.${COLORS.reset}\n`);
+    return;
   }
+
+  let syncedCount = 0;
+  let addedCount = 0;
+  let updatedCount = 0;
+  let upToDateCount = 0;
+
+  for (const item of itemsToSync) {
+    const meta = getSkillMeta(item.relPath, targetBaseDir);
+    
+    // Determine standard catalog destination relative path
+    let destRelPath = item.relPath;
+    const destCatalogPath = path.join(sourceSkillsDir, destRelPath);
+    const isNew = !fs.existsSync(destCatalogPath);
+
+    const srcHash = getFolderHash(item.sourcePath);
+    const destHash = isNew ? null : getFolderHash(destCatalogPath);
+
+    if (!isNew && srcHash && destHash && srcHash === destHash) {
+      console.log(`  ${COLORS.gray}[✔ UP-TO-DATE]${COLORS.reset} ${destRelPath}`);
+      upToDateCount++;
+      syncedCount++;
+      continue;
+    }
+
+    if (fs.existsSync(destCatalogPath)) {
+      fs.rmSync(destCatalogPath, { recursive: true, force: true });
+    }
+    copyFolderRecursiveSync(item.sourcePath, destCatalogPath);
+
+    if (isNew) {
+      console.log(`  ${COLORS.bright}${COLORS.green}[✨ NEW ADDED]${COLORS.reset} ${destRelPath} ➔ ${COLORS.gray}${destCatalogPath}${COLORS.reset}`);
+      addedCount++;
+    } else {
+      console.log(`  ${COLORS.green}[✔ UPDATED]${COLORS.reset} ${destRelPath} ➔ ${COLORS.gray}${destCatalogPath}${COLORS.reset}`);
+      updatedCount++;
+    }
+    syncedCount++;
+  }
+
+  console.log(`\n${COLORS.bright}${COLORS.green}Sync Complete!${COLORS.reset} ${syncedCount} skill(s) processed (${addedCount} newly added, ${updatedCount} updated, ${upToDateCount} up-to-date).`);
+  console.log(`💡 Next step: Review changes with ${COLORS.cyan}git status${COLORS.reset} and commit with ${COLORS.cyan}git commit${COLORS.reset}\n`);
 }
 
 function promptInteractiveInstall() {

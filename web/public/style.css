@@ -679,7 +679,27 @@ body {
 }
 .pill-green { background: rgba(34, 197, 94, 0.15); color: var(--accent-green); border: 1px solid rgba(34, 197, 94, 0.3); }
 .pill-orange { background: rgba(249, 115, 22, 0.15); color: var(--accent-orange); border: 1px solid rgba(249, 115, 22, 0.3); }
+.pill-purple { background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3); }
 .pill-gray { background: rgba(255, 255, 255, 0.08); color: var(--text-muted); border: 1px solid var(--border-color); }
+
+.skill-card.is-target-only {
+  border-color: rgba(168, 85, 247, 0.35);
+}
+.skill-card.is-target-only:hover {
+  border-color: var(--accent-purple);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(168, 85, 247, 0.2);
+}
+
+.btn-sync {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+.btn-sync:hover {
+  background: rgba(168, 85, 247, 0.25);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.3);
+}
 
 .modal-title { font-size: 1.25rem; font-weight: 700; }
 

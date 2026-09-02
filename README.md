@@ -43,13 +43,16 @@ skills-catalog update roblox/knit-arch roblox/object-pooling --local
 skills-catalog update --global
 ```
 
-### 3. Reverse Sync (Save Project Edits Back to Catalog)
-If you made improvements or prompt adjustments to a skill during daily coding:
+### 3. Synchronization (Reverse Sync & Auto-Import New Skills)
+If you made improvements, created brand new skills in your local project, or tuned prompts in global config:
 ```bash
-# Sync edits from local workspace back into the catalog repository
+# Sync edits and automatically import any newly created skills from local workspace into catalog repository
 skills-catalog sync-from-local
 
-# Sync edits from global config back into the catalog repository
+# Sync from a specific external project path
+skills-catalog sync-from-local --from "D:\path\to\project"
+
+# Sync edits and automatically import any newly created skills from global config into catalog repository
 skills-catalog sync-from-global
 ```
 
@@ -118,11 +121,17 @@ skills-catalog uninstall roblox-object-pooling --global
 
 | Skill Name | Path | Primary Responsibility |
 |---|---|---|
-| **[`roblox-knit-arch`](./.agents/skills/roblox-knit-arch/)** | `.agents/skills/roblox/knit-arch/` | **Master 5-Layer Clean Architecture**: Domain, Application, Interface/Adapter, Infrastructure, Presentation, Contracts, and 5 Production Pillars. |
-| **[`roblox-object-pooling`](./.agents/skills/roblox-object-pooling/)** | `.agents/skills/roblox/object-pooling/` | **Object Pooling**: Pre-warmed pools for fast bullets, damage numbers, and particle effects to eliminate GC lag spikes. |
-| **[`roblox-animation-system`](./.agents/skills/roblox-animation-system/)** | `.agents/skills/roblox/animation-system/` | **Animation Pipeline**: Centralized track caching, `CatalogConfig` asset ID mapping, and frame-perfect marker event synchronization. |
-| **[`roblox-responsive-ui`](./.agents/skills/roblox-responsive-ui/)** | `.agents/skills/roblox/responsive-ui/` | **Cross-Platform Responsive UI**: Model-View-Presenter (MVP), dynamic `UIScale` modifier, 44px touch targets, and `Trove` memory cleanup. |
-| **[`roblox-indicator-system`](./.agents/skills/roblox-indicator-system/)** | `.agents/skills/roblox/indicator-system/` | **Alert & Badge System**: Reactive red-dot and unread counters across UI buttons and navigation tabs. |
+| **[`roblox-knit-arch`](./.agents/skills/roblox/knit-arch/)** | `.agents/skills/roblox/knit-arch/` | **Master 5-Layer Clean Architecture**: Domain, Application, Interface/Adapter, Infrastructure, Presentation, Contracts, and 5 Production Pillars. |
+| **[`roblox-domain-component`](./.agents/skills/roblox/domain-component/)** | `.agents/skills/roblox/domain-component/` | **Domain Behavior Components**: Stateless, immutable, and engine-agnostic component behaviors (Health, Movement, Combat). |
+| **[`roblox-domain-entity`](./.agents/skills/roblox/domain-entity/)** | `.agents/skills/roblox/domain-entity/` | **Domain Composite Entities**: Composed entity game objects (Unit, Base, Character) owning multiple behavior components. |
+| **[`roblox-domain-standalone`](./.agents/skills/roblox/domain-standalone/)** | `.agents/skills/roblox/domain-standalone/` | **Standalone Domain Rules**: Pure mathematical calculations, match rules, scoring, and targeting algorithms. |
+| **[`roblox-domain-definition`](./.agents/skills/roblox/domain-definition/)** | `.agents/skills/roblox/domain-definition/` | **Data-Driven Definitions**: Definition blueprints, Rule of Definition Sharding, and catalog aggregator configs. |
+| **[`roblox-test-creation`](./.agents/skills/roblox/test-creation/)** | `.agents/skills/roblox/test-creation/` | **BDD Unit Testing (RDK)**: Automated test suite creation (`*.spec.lua`) and execution with TestEZ via Roblox Development Kit. |
+| **[`roblox-object-pooling`](./.agents/skills/roblox/object-pooling/)** | `.agents/skills/roblox/object-pooling/` | **Object Pooling**: Pre-warmed pools for fast bullets, damage numbers, and particle effects to eliminate GC lag spikes. |
+| **[`roblox-animation-system`](./.agents/skills/roblox/animation-system/)** | `.agents/skills/roblox/animation-system/` | **Animation Pipeline**: Centralized track caching, `CatalogConfig` asset ID mapping, and frame-perfect marker event synchronization. |
+| **[`roblox-responsive-ui`](./.agents/skills/roblox/responsive-ui/)** | `.agents/skills/roblox/responsive-ui/` | **Cross-Platform Responsive UI**: Model-View-Presenter (MVP), dynamic `UIScale` modifier, 44px touch targets, and `Trove` memory cleanup. |
+| **[`roblox-indicator-system`](./.agents/skills/roblox/indicator-system/)** | `.agents/skills/roblox/indicator-system/` | **Alert & Badge System**: Reactive red-dot and unread counters across UI buttons and navigation tabs. |
+| **[`game-design-document`](./.agents/skills/game-design-document/)** | `.agents/skills/game-design-document/` | **Game Design Documentation (GDD)**: Structured game design documentation, systems specs, and codebase drift validation. |
 
 ---
 
